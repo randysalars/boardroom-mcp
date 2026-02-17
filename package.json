@@ -1,6 +1,6 @@
 {
     "name": "boardroom-mcp",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "description": "AI Governance-as-a-Service — MCP Server for multi-advisor decision intelligence with 450+ advisors across 38 expert councils",
     "type": "module",
     "main": "dist/index.js",
