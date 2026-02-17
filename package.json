@@ -1,0 +1,54 @@
+{
+    "name": "boardroom-mcp",
+    "version": "0.1.0",
+    "description": "AI Governance-as-a-Service — MCP Server for multi-advisor decision intelligence with 450+ advisors across 38 expert councils",
+    "type": "module",
+    "main": "dist/index.js",
+    "bin": {
+        "boardroom-mcp": "dist/index.js"
+    },
+    "scripts": {
+        "build": "tsc",
+        "dev": "tsx src/index.ts",
+        "start": "node dist/index.js",
+        "typecheck": "tsc --noEmit"
+    },
+    "keywords": [
+        "mcp",
+        "model-context-protocol",
+        "ai-governance",
+        "boardroom",
+        "multi-agent",
+        "trust-oracle",
+        "decision-engine",
+        "agent-economy",
+        "cognitive-engine"
+    ],
+    "author": "SalarsNet <randy@salars.net>",
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/randysalars/boardroom-mcp.git"
+    },
+    "homepage": "https://salars.net/boardroom",
+    "bugs": {
+        "url": "https://github.com/randysalars/boardroom-mcp/issues"
+    },
+    "dependencies": {
+        "@modelcontextprotocol/sdk": "^1.0.0",
+        "zod": "^3.23.0"
+    },
+    "devDependencies": {
+        "tsx": "^4.7.0",
+        "typescript": "^5.5.0",
+        "@types/node": "^22.0.0"
+    },
+    "engines": {
+        "node": ">=20"
+    },
+    "files": [
+        "dist",
+        "README.md",
+        "LICENSE"
+    ]
+}
