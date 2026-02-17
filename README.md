@@ -6,7 +6,9 @@
 [![npm](https://img.shields.io/badge/npm-boardroom--mcp-emerald.svg)](https://www.npmjs.com/package/boardroom-mcp)
 [![MCP](https://img.shields.io/badge/MCP-Compatible-blue.svg)](https://modelcontextprotocol.io)
 
-> Give your AI agents a boardroom of advisors. Multi-advisor debate, institutional memory, trust scoring, and cognitive governance — all running locally on your machine.
+> Give your AI agents a boardroom of advisors. Based on **Napoleon Hill's Mastermind Principle** — the idea that coordinated minds produce intelligence no single mind can achieve — digitized for AI agents.
+
+Multi-advisor debate, institutional memory, trust scoring, and cognitive governance — all running locally on your machine.
 
 ## 📖 [Read the Full Documentation →](https://salars.net/boardroom/docs)
 
@@ -14,28 +16,138 @@ Complete guide covering Quick Start → Installation → 5 Tools → Protocol Fi
 
 ---
 
-## ⚡ Quick Start (2 minutes)
+## ⚡ Quick Start
 
-Add to your Claude Desktop config:
+### Claude Desktop
+
+Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_desktop_config.json` on macOS, `%APPDATA%/Claude/claude_desktop_config.json` on Windows):
 
 ```json
 {
   "mcpServers": {
     "boardroom": {
       "command": "npx",
-      "args": ["boardroom-mcp"]
+      "args": ["-y", "boardroom-mcp"]
     }
   }
 }
 ```
 
-Then ask your agent:
+Restart Claude Desktop, then ask:
 
 ```
 Board: Should I build a mobile app or PWA for my SaaS?
 ```
 
-That's it. The demo council of 5 advisors will analyze your question from multiple perspectives.
+### Claude Code (CLI)
+
+Create `.mcp.json` in your project root:
+
+```json
+{
+  "mcpServers": {
+    "boardroom": {
+      "command": "npx",
+      "args": ["-y", "boardroom-mcp"]
+    }
+  }
+}
+```
+
+Or add it to your Claude Code settings via:
+```bash
+claude mcp add boardroom -- npx -y boardroom-mcp
+```
+
+### Cursor / Windsurf
+
+Add to your MCP settings (Settings → MCP):
+
+```json
+{
+  "mcpServers": {
+    "boardroom": {
+      "command": "npx",
+      "args": ["-y", "boardroom-mcp"]
+    }
+  }
+}
+```
+
+### Antigravity
+
+Add to your MCP configuration file:
+
+```json
+{
+  "mcpServers": {
+    "boardroom": {
+      "command": "npx",
+      "args": ["-y", "boardroom-mcp"]
+    }
+  }
+}
+```
+
+### OpenClaw
+
+Add to your `~/.openclaw/openclaw.json` under the gateway's `mcpServers` key:
+
+```json
+{
+  "gateway": {
+    "mcpServers": {
+      "boardroom": {
+        "command": "npx",
+        "args": ["-y", "boardroom-mcp"]
+      }
+    }
+  }
+}
+```
+
+---
+
+## ✅ Verify Installation
+
+After configuring, ask your AI agent:
+
+```
+Use the analyze tool: "Test — is the Boardroom working?"
+```
+
+You should see output starting with `# Boardroom Analysis` listing the demo council advisors. If you see this, the server is working correctly.
+
+---
+
+## 📦 Alternative Installation Methods
+
+```bash
+# Option A: npx (used by MCP configs above — no global install needed)
+npx -y boardroom-mcp
+
+# Option B: Global install
+npm install -g boardroom-mcp
+boardroom-mcp
+
+# Option C: Clone and build (for development/contributing)
+git clone https://github.com/randysalars/boardroom-mcp.git
+cd boardroom-mcp && npm install && npm run build
+```
+
+> **Note:** Options A and B require the package to be published to npm. If `npx` fails, use Option C (clone and build), then point your MCP config to the local build:
+> ```json
+> {
+>   "mcpServers": {
+>     "boardroom": {
+>       "command": "node",
+>       "args": ["/path/to/boardroom-mcp/dist/index.js"]
+>     }
+>   }
+> }
+> ```
+
+---
 
 ## 🔧 5 MCP Tools
 
@@ -49,51 +161,42 @@ That's it. The demo council of 5 advisors will analyze your question from multip
 
 → [See detailed tool documentation with examples](https://salars.net/boardroom/docs#tools)
 
-## 📦 Installation
-
-```bash
-# Option A: npx (recommended — no install needed)
-npx boardroom-mcp
-
-# Option B: Global install
-npm install -g boardroom-mcp
-boardroom-mcp
-
-# Option C: Clone and build
-git clone https://github.com/randysalars/boardroom-mcp.git
-cd boardroom-mcp && npm install && npm run build && npm start
-```
+---
 
 ## 🏗️ Architecture
 
 ```
-Your AI Client (Claude, Cursor, Windsurf)
+Your AI Client (Claude, Cursor, Windsurf, Antigravity, OpenClaw)
          │ MCP Protocol (STDIO)
          │ Runs 100% on YOUR machine
          ▼
   Boardroom MCP Server
          │
+         ├── demo/              ← Included demo council (5 advisors)
+         │
          ▼
-  .ai/boardroom/         ← Protocol files (the intelligence)
-  ├── LEDGER.md           ← Institutional memory
-  ├── BOARD_WISDOM.md     ← Distilled principles
+  ~/.ai/boardroom/          ← Full protocol files (optional upgrade)
+  ├── LEDGER.md              ← Institutional memory
+  ├── BOARD_WISDOM.md        ← Distilled principles
   └── mastermind/
-      ├── seats/          ← Advisor definitions
-      ├── councils/       ← Expert panels
-      └── protocols/      ← Debate rules
+      ├── seats/             ← Advisor definitions
+      ├── councils/          ← Expert panels
+      └── protocols/         ← Debate rules
 ```
 
 **Zero cost.** No API keys. No cloud. No hosting. Your AI client does the LLM processing.
+
+---
 
 ## 🎯 What You Get
 
 ### Free (This Repo)
 - ✅ MCP server with 5 tools
-- ✅ Demo council (5 generic advisors)
+- ✅ Demo council (5 advisors: Strategist, Engineer, Skeptic, Visionary, Guardian)
 - ✅ MIT license
 
 ### Full System ([salars.net/boardroom](https://salars.net/boardroom))
-- 🏛️ 450+ named advisors with calibrated seat cards
+- 🏛️ 450+ named advisors with calibrated seat cards (Buffett, Torvalds, Aurelius...)
 - 🏛️ 38 expert councils (Tech, Business, Survival, Legal, Creative...)
 - ⚔️ 5 debate resolution types
 - 🧠 10 cognitive drills
@@ -104,21 +207,36 @@ Your AI Client (Claude, Cursor, Windsurf)
 - 📖 113+ Wisdom Codex entries
 - 🎯 Smart Router (auto-detects council + severity)
 
+---
+
 ## ⚙️ Environment Variables
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `BOARDROOM_ROOT` | (auto-detect) | Path to your `.ai/boardroom` directory |
+| `BOARDROOM_ROOT` | `~/.ai/boardroom` | Path to your full protocol files directory |
 | `SALARSNET_ROOT` | (auto-detect) | Root project directory |
+
+---
+
+## 🔍 Troubleshooting
+
+| Problem | Solution |
+|---------|----------|
+| `npx boardroom-mcp` fails | Package may not be published yet — use Option C (clone and build) |
+| "No advisors found" | Demo council ships with the package. Check `demo/seats.md` exists |
+| Tools don't appear in Claude | Restart Claude Desktop after editing config. Check JSON syntax. |
+| `ENOENT` errors | If using full protocol files, set `BOARDROOM_ROOT` to your `.ai/boardroom` path |
+
+---
 
 ## 📬 Stay in the Loop
 
-Join the Boardroom community:
-
 - 🌐 **[Landing Page](https://salars.net/boardroom)** — Feature overview + waitlist
 - 📖 **[Documentation](https://salars.net/boardroom/docs)** — Complete free → advanced guide
-- 📧 **[Subscribe for Updates](https://salars.net/boardroom#waitlist)** — Get notified about new councils, protocol updates, and features
-- 🐦 **[@SalarsNet](https://x.com/salaborsa)** — Follow for tips, demos, and announcements
+- 📧 **[Subscribe for Updates](https://salars.net/boardroom#waitlist)** — New councils, protocol updates, features
+- 🐦 **[@SalarsNet](https://x.com/salaborsa)** — Tips, demos, and announcements
+
+---
 
 ## 🤝 Contributing
 
@@ -127,6 +245,8 @@ PRs welcome! Areas we'd love help with:
 - New cognitive drill templates
 - Documentation improvements
 - Bug fixes
+
+---
 
 ## 📄 License
 
