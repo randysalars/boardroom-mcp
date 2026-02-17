@@ -2,48 +2,21 @@
 
 **AI Governance-as-a-Service — Model Context Protocol Server**
 
-Give your AI agents a boardroom of 450+ advisors across 38 expert councils. Structured debate. Cognitive drills. Institutional memory that compounds with every decision.
+[![MIT License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![npm](https://img.shields.io/badge/npm-boardroom--mcp-emerald.svg)](https://www.npmjs.com/package/boardroom-mcp)
+[![MCP](https://img.shields.io/badge/MCP-Compatible-blue.svg)](https://modelcontextprotocol.io)
 
-[![npm version](https://img.shields.io/npm/v/boardroom-mcp)](https://www.npmjs.com/package/boardroom-mcp)
-[![License: MIT](https://img.shields.io/badge/License-MIT-emerald.svg)](https://opensource.org/licenses/MIT)
-[![MCP](https://img.shields.io/badge/MCP-Compatible-blue)](https://modelcontextprotocol.io)
+> Give your AI agents a boardroom of advisors. Multi-advisor debate, institutional memory, trust scoring, and cognitive governance — all running locally on your machine.
 
----
+## 📖 [Read the Full Documentation →](https://salars.net/boardroom/docs)
 
-## What is this?
-
-The Boardroom MCP server gives your AI agent access to a **multi-advisor decision engine**. Instead of your agent making decisions alone, it routes questions to relevant expert councils, generates mandatory tension between opposing viewpoints, and synthesizes recommendations backed by precedent memory.
-
-### Key Features
-
-| Feature | Description |
-|---------|-------------|
-| **450+ Named Advisors** | Calibrated expertise across business, tech, philosophy, sciences, and more |
-| **38 Expert Councils** | From Business Strategy to AI & Robotics to Consciousness & Spirituality |
-| **35+ Session Modes** | Sprint, Code, Debug, Shadow, Crisis, Copy, Funnel, Campaign, and more |
-| **Structured Debate Protocol** | 5 resolution types when advisors disagree |
-| **Meta-Observer** | Watches for bias, authority worship, and cognitive drift |
-| **Mind Versioning** | Invoke any advisor at different life stages |
-| **Prometheus Protocol** | Forge ad-hoc domain intelligence on the fly |
-| **Institutional Memory** | LEDGER + Wisdom Codex persist across sessions |
-
-### 5 MCP Tools
-
-| Tool | Description |
-|------|-------------|
-| `analyze()` | Full boardroom consultation with multi-advisor synthesis |
-| `check_governance()` | Task classification + advisor routing + risk assessment |
-| `query_intelligence()` | Search persistent LEDGER and Wisdom Codex for precedents |
-| `trust_lookup()` | 6-dimension trust vector for any AI agent |
-| `report_outcome()` | Feed the knowledge flywheel — log what actually happened |
+Complete guide covering Quick Start → Installation → 5 Tools → Protocol Files → Building Councils → Debate Protocols → Cognitive Drills → Mind Versioning → Architecture → Full System.
 
 ---
 
-## Quick Start
+## ⚡ Quick Start (2 minutes)
 
-### Claude Desktop / Cursor
-
-Add to your `claude_desktop_config.json`:
+Add to your Claude Desktop config:
 
 ```json
 {
@@ -56,110 +29,105 @@ Add to your `claude_desktop_config.json`:
 }
 ```
 
-### Manual Installation
+Then ask your agent:
 
-```bash
-npm install -g boardroom-mcp
-boardroom-mcp
+```
+Board: Should I build a mobile app or PWA for my SaaS?
 ```
 
-### Environment Variables
+That's it. The demo council of 5 advisors will analyze your question from multiple perspectives.
+
+## 🔧 5 MCP Tools
+
+| Tool | Purpose |
+|------|---------|
+| `analyze` | Full boardroom consultation with multi-advisor debate |
+| `check_governance` | Task classification + severity routing |
+| `query_intelligence` | Search LEDGER decisions + Wisdom Codex |
+| `trust_lookup` | 6-dimension trust vector for any entity |
+| `report_outcome` | Log outcomes for institutional memory |
+
+→ [See detailed tool documentation with examples](https://salars.net/boardroom/docs#tools)
+
+## 📦 Installation
+
+```bash
+# Option A: npx (recommended — no install needed)
+npx boardroom-mcp
+
+# Option B: Global install
+npm install -g boardroom-mcp
+boardroom-mcp
+
+# Option C: Clone and build
+git clone https://github.com/randysalars/boardroom-mcp.git
+cd boardroom-mcp && npm install && npm run build && npm start
+```
+
+## 🏗️ Architecture
+
+```
+Your AI Client (Claude, Cursor, Windsurf)
+         │ MCP Protocol (STDIO)
+         │ Runs 100% on YOUR machine
+         ▼
+  Boardroom MCP Server
+         │
+         ▼
+  .ai/boardroom/         ← Protocol files (the intelligence)
+  ├── LEDGER.md           ← Institutional memory
+  ├── BOARD_WISDOM.md     ← Distilled principles
+  └── mastermind/
+      ├── seats/          ← Advisor definitions
+      ├── councils/       ← Expert panels
+      └── protocols/      ← Debate rules
+```
+
+**Zero cost.** No API keys. No cloud. No hosting. Your AI client does the LLM processing.
+
+## 🎯 What You Get
+
+### Free (This Repo)
+- ✅ MCP server with 5 tools
+- ✅ Demo council (5 generic advisors)
+- ✅ MIT license
+
+### Full System ([salars.net/boardroom](https://salars.net/boardroom))
+- 🏛️ 450+ named advisors with calibrated seat cards
+- 🏛️ 38 expert councils (Tech, Business, Survival, Legal, Creative...)
+- ⚔️ 5 debate resolution types
+- 🧠 10 cognitive drills
+- ⏳ Mind Versioning (Young Jobs vs Late Jobs)
+- 🔥 Prometheus Protocol (forge new domains on the fly)
+- 👁️ Meta-Observer (real-time bias detection)
+- 📚 69+ LEDGER decisions as precedent library
+- 📖 113+ Wisdom Codex entries
+- 🎯 Smart Router (auto-detects council + severity)
+
+## ⚙️ Environment Variables
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `BOARDROOM_ROOT` | `~/.ai/boardroom` | Path to boardroom protocol files |
-| `BOARDROOM_TRUST_PATH` | `~/.boardroom/trust-oracle.json` | Trust oracle data |
+| `BOARDROOM_ROOT` | (auto-detect) | Path to your `.ai/boardroom` directory |
+| `SALARSNET_ROOT` | (auto-detect) | Root project directory |
 
----
+## 📬 Stay in the Loop
 
-## How It Works
+Join the Boardroom community:
 
-```
-┌─────────────────────────────────────────────┐
-│           Your AI Agent (Claude, etc.)       │
-│                                             │
-│  "Should I migrate to microservices?"       │
-└──────────────────┬──────────────────────────┘
-                   │ MCP (STDIO)
-                   ▼
-┌─────────────────────────────────────────────┐
-│          Boardroom MCP Server               │
-│                                             │
-│  1. Classify → Technology + Strategy        │
-│  2. Route → Technology Council + Keystone   │
-│  3. Load Advisors → Torvalds, Knuth, Bezos  │
-│  4. Find Precedents → LEDGER search         │
-│  5. Apply Tension → Simplicity vs Scale     │
-│  6. Synthesize → Omega Truth                │
-└──────────────────┬──────────────────────────┘
-                   │ reads local files
-                   ▼
-┌─────────────────────────────────────────────┐
-│     ~/.ai/boardroom/ (your protocol files)  │
-│                                             │
-│  mastermind/                                │
-│  ├── SYSTEM_PROMPT.md                       │
-│  ├── COGNITIVE_DOSSIERS.md                  │
-│  ├── DEBATE_PROTOCOL.md                     │
-│  ├── keystone/seats.md                      │
-│  ├── business/seats.md                      │
-│  ├── technology/seats.md                    │
-│  └── ... (38 councils)                      │
-│  LEDGER.md                                  │
-│  BOARD_WISDOM.md                            │
-└─────────────────────────────────────────────┘
-```
+- 🌐 **[Landing Page](https://salars.net/boardroom)** — Feature overview + waitlist
+- 📖 **[Documentation](https://salars.net/boardroom/docs)** — Complete free → advanced guide
+- 📧 **[Subscribe for Updates](https://salars.net/boardroom#waitlist)** — Get notified about new councils, protocol updates, and features
+- 🐦 **[@SalarsNet](https://x.com/salaborsa)** — Follow for tips, demos, and announcements
 
-The MCP server runs **100% locally on your machine**. No API keys, no cloud dependency, no data leaves your system.
+## 🤝 Contributing
 
----
+PRs welcome! Areas we'd love help with:
+- Additional demo advisors
+- New cognitive drill templates
+- Documentation improvements
+- Bug fixes
 
-## Getting Started with Protocol Files
+## 📄 License
 
-The MCP server reads your boardroom protocol files from `~/.ai/boardroom/`. A demo council is included to get you started, but the full system with 450+ advisors, 38 councils, cognitive dossiers, debate protocols, and institutional memory is available at:
-
-### 🌐 [salars.net/boardroom](https://salars.net/boardroom)
-
-Join the waitlist for the full Boardroom Cognitive Engine.
-
----
-
-## Architecture
-
-- **Transport**: STDIO (runs as a local process — zero network)
-- **Protocol**: Model Context Protocol (MCP) via `@modelcontextprotocol/sdk`
-- **Data**: Reads markdown/JSON files from your local filesystem
-- **Cost**: $0 — you pay only for your LLM subscription
-- **Security**: No data ever leaves your machine
-
----
-
-## Demo Council
-
-This package includes a small demo council (`demo/`) with 5 sample advisors so you can test the tools immediately:
-
-| Advisor | Domain | Style |
-|---------|--------|-------|
-| **The Strategist** | Business strategy | Analytical, data-driven |
-| **The Engineer** | Technical architecture | First-principles, pragmatic |
-| **The Skeptic** | Risk assessment | Contrarian, adversarial |
-| **The Visionary** | Innovation & trends | Ambitious, forward-looking |
-| **The Guardian** | Ethics & governance | Values-first, protective |
-
-Run `analyze("Should I launch this feature?")` to see them in action.
-
----
-
-## Contributing
-
-Issues and PRs welcome. The MCP server adapter is MIT-licensed and community-driven.
-
-For protocol file contributions (new councils, advisor calibrations, drill improvements), please reach out at [salars.net](https://salars.net).
-
----
-
-## License
-
-MIT — see [LICENSE](LICENSE)
-
-Built by [SalarsNet](https://salars.net) 🏛️
+[MIT](LICENSE) — Built by [SalarsNet](https://salars.net)
