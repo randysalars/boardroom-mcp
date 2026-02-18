@@ -12,36 +12,23 @@ Multi-advisor debate, institutional memory, trust scoring, and cognitive governa
 
 ## 📖 [Read the Full Documentation →](https://salars.net/boardroom/docs)
 
-Complete guide covering Quick Start → Installation → 5 Tools → Protocol Files → Building Councils → Debate Protocols → Cognitive Drills → Mind Versioning → Architecture → Full System.
+Complete guide covering Quick Start → Installation → 5 Tools → Use Cases → Protocol Files → Building Councils → Debate Protocols → Cognitive Drills → Mind Versioning → Architecture → Full System.
 
 ---
 
-## ⚡ Quick Start
+## ⚡ Quick Start — Pick Your Platform
 
-### Claude Desktop
+> **Prerequisites:** Node.js 18+ must be installed. Check with `node --version`.
 
-Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_desktop_config.json` on macOS, `%APPDATA%/Claude/claude_desktop_config.json` on Windows):
+---
 
-```json
-{
-  "mcpServers": {
-    "boardroom": {
-      "command": "npx",
-      "args": ["-y", "boardroom-mcp"]
-    }
-  }
-}
-```
+### 🟣 Claude Desktop
 
-Restart Claude Desktop, then ask:
+**Step 1:** Open your config file:
+- **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
+- **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
 
-```
-Board: Should I build a mobile app or PWA for my SaaS?
-```
-
-### Claude Code (CLI)
-
-Create `.mcp.json` in your project root:
+**Step 2:** Paste this (create the file if it doesn't exist):
 
 ```json
 {
@@ -54,15 +41,28 @@ Create `.mcp.json` in your project root:
 }
 ```
 
-Or add it to your Claude Code settings via:
+**Step 3:** Restart Claude Desktop completely (quit and reopen).
+
+**Step 4: Test it** — type this in the chat:
+```
+Use the analyze tool with task: "Test — is the Boardroom working?"
+```
+
+**Step 5: See what's available** — type this in the chat:
+```
+What Boardroom MCP tools do I have access to? List all 5 tools with a one-line description of each.
+```
+
+---
+
+### 🟢 Claude Code (CLI)
+
+**Option A — One command (recommended):**
 ```bash
 claude mcp add boardroom -- npx -y boardroom-mcp
 ```
 
-### Cursor / Windsurf
-
-Add to your MCP settings (Settings → MCP):
-
+**Option B — Config file:** Create `.mcp.json` in your project root:
 ```json
 {
   "mcpServers": {
@@ -74,10 +74,85 @@ Add to your MCP settings (Settings → MCP):
 }
 ```
 
-### VS Code (GitHub Copilot)
+**Test it** — type this in Claude Code:
+```
+Use the analyze tool with task: "Test — is the Boardroom working?"
+```
 
-Create `.vscode/mcp.json` in your project root:
+**See what's available:**
+```
+What Boardroom MCP tools do I have access to? List all 5 tools with a one-line description of each.
+```
 
+---
+
+### 🔵 Cursor
+
+**Step 1:** Open **Settings → MCP** (or create `.cursor/mcp.json` in your project root)
+
+**Step 2:** Add this server config:
+```json
+{
+  "mcpServers": {
+    "boardroom": {
+      "command": "npx",
+      "args": ["-y", "boardroom-mcp"]
+    }
+  }
+}
+```
+
+**Step 3:** Restart Cursor.
+
+**Test it** — type in Cursor chat:
+```
+Use the analyze tool with task: "Test — is the Boardroom working?"
+```
+
+**See what's available:**
+```
+What Boardroom MCP tools do I have access to? List all 5 tools with a one-line description of each.
+```
+
+---
+
+### 🟡 Windsurf
+
+**Step 1:** Open **Settings → MCP** or create `.windsurf/mcp.json` in your project root.
+
+**Step 2:** Add this server config:
+```json
+{
+  "mcpServers": {
+    "boardroom": {
+      "command": "npx",
+      "args": ["-y", "boardroom-mcp"]
+    }
+  }
+}
+```
+
+**Step 3:** Restart Windsurf.
+
+**Test it** — type in Windsurf chat:
+```
+Use the analyze tool with task: "Test — is the Boardroom working?"
+```
+
+**See what's available:**
+```
+What Boardroom MCP tools do I have access to? List all 5 tools with a one-line description of each.
+```
+
+---
+
+### 🔷 VS Code (GitHub Copilot)
+
+> Requires GitHub Copilot with agent mode enabled.
+
+**Step 1:** Enable MCP: **Settings → Copilot → MCP** (toggle on).
+
+**Step 2:** Create `.vscode/mcp.json` in your project root:
 ```json
 {
   "servers": {
@@ -89,12 +164,29 @@ Create `.vscode/mcp.json` in your project root:
 }
 ```
 
-> Requires Copilot agent mode. Enable via Settings → Copilot → MCP.
+> ⚠️ **Note:** VS Code uses `"servers"` — NOT `"mcpServers"`. This is different from all other platforms.
 
-### ChatGPT Desktop
+**Step 3:** Reload VS Code window (Ctrl+Shift+P → "Reload Window").
 
-Requires ChatGPT Plus/Pro. Go to **Settings → Developer → Connectors** and add a custom MCP server:
+**Test it** — type in Copilot Chat (Agent mode):
+```
+Use the analyze tool with task: "Test — is the Boardroom working?"
+```
 
+**See what's available:**
+```
+What Boardroom MCP tools do I have access to? List all 5 tools with a one-line description of each.
+```
+
+---
+
+### ⚫ ChatGPT Desktop
+
+> Requires ChatGPT Plus or Pro subscription.
+
+**Step 1:** Open ChatGPT Desktop → **Settings → Developer → Connectors**.
+
+**Step 2:** Click "Add Custom MCP Server" and paste:
 ```json
 {
   "mcpServers": {
@@ -106,10 +198,28 @@ Requires ChatGPT Plus/Pro. Go to **Settings → Developer → Connectors** and a
 }
 ```
 
-### OpenAI Codex CLI
+**Step 3:** Enable the "boardroom" connector in your chat.
 
-Add to `~/.codex/config.toml`:
+**Test it** — type in the chat:
+```
+Use the analyze tool with task: "Test — is the Boardroom working?"
+```
 
+**See what's available:**
+```
+What Boardroom MCP tools do I have access to? List all 5 tools with a one-line description of each.
+```
+
+---
+
+### 🟠 OpenAI Codex CLI
+
+**Option A — One command (recommended):**
+```bash
+codex mcp add boardroom -- npx -y boardroom-mcp
+```
+
+**Option B — Config file:** Add to `~/.codex/config.toml`:
 ```toml
 [mcp_servers.boardroom]
 type = "stdio"
@@ -117,15 +227,21 @@ command = "npx"
 args = ["-y", "boardroom-mcp"]
 ```
 
-Or via CLI:
-```bash
-codex mcp add boardroom -- npx -y boardroom-mcp
+**Test it** — type in Codex CLI:
+```
+Use the analyze tool with task: "Test — is the Boardroom working?"
 ```
 
-### Antigravity
+**See what's available:**
+```
+What Boardroom MCP tools do I have access to? List all 5 tools with a one-line description of each.
+```
 
-Add to your `.mcp.json` configuration file:
+---
 
+### 🔴 Antigravity
+
+Create `.mcp.json` in your workspace root:
 ```json
 {
   "mcpServers": {
@@ -137,10 +253,21 @@ Add to your `.mcp.json` configuration file:
 }
 ```
 
-### OpenClaw
+**Test it** — type in the chat:
+```
+Use the analyze tool with task: "Test — is the Boardroom working?"
+```
+
+**See what's available:**
+```
+What Boardroom MCP tools do I have access to? List all 5 tools with a one-line description of each.
+```
+
+---
+
+### ⚪ OpenClaw
 
 Add to your `~/.openclaw/openclaw.json` under the gateway's `mcpServers` key:
-
 ```json
 {
   "gateway": {
@@ -154,23 +281,58 @@ Add to your `~/.openclaw/openclaw.json` under the gateway's `mcpServers` key:
 }
 ```
 
+**Test it** — type in the chat:
+```
+Use the analyze tool with task: "Test — is the Boardroom working?"
+```
+
+**See what's available:**
+```
+What Boardroom MCP tools do I have access to? List all 5 tools with a one-line description of each.
+```
+
 ---
 
-## ✅ Verify Installation
+## ✅ What Success Looks Like
 
-After configuring, restart your AI client and ask:
+When the test prompt works, you'll see output like:
 
 ```
-Use the analyze tool: "Test — is the Boardroom working?"
+# Boardroom Analysis
+
+## Advisors Consulted
+- **Warren Buffett** (Business Strategy): [their position]
+- **Linus Torvalds** (Technology): [their position]
+- **Marcus Aurelius** (Values & Ethics): [their position]
+
+## Verdict
+[synthesized recommendation]
+
+## Recommended Actions
+1. [action item]
+2. [action item]
 ```
 
-**✅ Success:** You'll see output starting with `# Boardroom Analysis` with advisor positions from Warren Buffett, Linus Torvalds, and Marcus Aurelius.
+If you see this, **it's working.** Try a real question next:
 
-**❌ If Claude ignores the tool:** It means the MCP server isn't loaded. Check that:
-1. Your config file is in the right location (see Quick Start above)
-2. The JSON is valid (no trailing commas)
-3. You restarted the AI client after editing the config
-4. Node.js 18+ is installed (`node --version`)
+```
+Use the analyze tool with task: "Should I raise my SaaS price from $29 to $49?"
+```
+
+---
+
+## 📖 Quick Command Reference
+
+Copy-paste these prompts into your AI chat to use each tool:
+
+| What You Want | Prompt to Type |
+|---------------|----------------|
+| **Full analysis** | `Use the analyze tool with task: "Should I build feature X or Y?"` |
+| **Risk check** | `Use the check_governance tool with task: "Deploy to production on Friday"` |
+| **Search past decisions** | `Use the query_intelligence tool with query: "pricing strategy"` |
+| **Trust assessment** | `Use the trust_lookup tool for entity: "Stripe" with context: "payment processing"` |
+| **Log an outcome** | `Use the report_outcome tool with decision: "Raised prices 30%" and outcome: "Revenue up 22%"` |
+| **List all tools** | `What Boardroom MCP tools do I have? List all 5 with descriptions.` |
 
 ---
 
@@ -189,7 +351,7 @@ git clone https://github.com/randysalars/boardroom-mcp.git
 cd boardroom-mcp && npm install && npm run build
 ```
 
-> **Note:** Options A and B require the package to be published to npm. If `npx` fails, use Option C (clone and build), then point your MCP config to the local build:
+> **Note:** If `npx` fails, use Option C (clone and build), then point your MCP config to the local build:
 > ```json
 > {
 >   "mcpServers": {
@@ -220,7 +382,7 @@ cd boardroom-mcp && npm install && npm run build
 ## 🏗️ Architecture
 
 ```
-Your AI Client (Claude, Cursor, Windsurf, Antigravity, OpenClaw)
+Your AI Client (Claude, Cursor, Windsurf, VS Code, ChatGPT, Codex, Antigravity, OpenClaw)
          │ MCP Protocol (STDIO)
          │ Runs 100% on YOUR machine
          ▼
@@ -268,19 +430,114 @@ Your AI Client (Claude, Cursor, Windsurf, Antigravity, OpenClaw)
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `BOARDROOM_ROOT` | `~/.ai/boardroom` | Path to your full protocol files directory |
-| `SALARSNET_ROOT` | (auto-detect) | Root project directory |
+| `BOARDROOM_TRUST_PATH` | `~/.boardroom/trust-oracle.json` | Path to trust oracle data file |
 
 ---
 
 ## 🔍 Troubleshooting
 
-| Problem | Solution |
-|---------|----------|
-| `npx boardroom-mcp` fails | Package may not be published yet — use Option C (clone and build) |
-| "No advisors found" | Demo council ships with the package. Check `demo/seats.md` exists |
-| Tools don't appear in Claude | Restart Claude Desktop after editing config. Check JSON syntax. |
-| Claude ignores `analyze` tool | The MCP server isn't loaded. Verify config location, restart the client, and check `node --version` is 18+. |
-| `ENOENT` errors | If using full protocol files, set `BOARDROOM_ROOT` to your `.ai/boardroom` path |
+### The AI ignores my prompt and doesn't use the tool
+
+**This is the #1 issue.** It means the MCP server isn't loaded. Fix it:
+
+1. **Did you restart?** Every platform requires a restart after editing the config. Quit completely and reopen.
+2. **Is the config in the right file?** Double-check the file path for your platform (see Quick Start above).
+3. **Is the JSON valid?** No trailing commas, no comments. Use [jsonlint.com](https://jsonlint.com) to validate.
+4. **Is Node.js 18+ installed?** Run `node --version` in your terminal. Must be 18.0.0 or higher.
+5. **VS Code users:** You need `"servers"` not `"mcpServers"` — VS Code uses a different format.
+
+### The AI says "boardroom-mcp not found" or npx fails
+
+```bash
+# Verify the package exists
+npm view boardroom-mcp version
+
+# If that works but npx doesn't, clear cache:
+npx clear-npx-cache
+npx -y boardroom-mcp
+
+# Nuclear option — install globally:
+npm install -g boardroom-mcp
+```
+
+Then update your config to use the global install:
+```json
+{
+  "mcpServers": {
+    "boardroom": {
+      "command": "boardroom-mcp"
+    }
+  }
+}
+```
+
+### "No advisors found" in the output
+
+The demo council file isn't being found. This means the package installed but can't find `demo/seats.md`.
+
+```bash
+# Check if the demo file exists in the package
+npx -y boardroom-mcp --help 2>/dev/null
+ls $(npm root -g)/boardroom-mcp/demo/
+```
+
+If the demo directory is missing, reinstall: `npm install -g boardroom-mcp`
+
+### ENOENT errors
+
+You're pointing at a `BOARDROOM_ROOT` directory that doesn't exist:
+
+```bash
+# Check what path it's looking for
+echo $BOARDROOM_ROOT
+
+# Create it or unset the variable:
+unset BOARDROOM_ROOT  # falls back to demo council
+```
+
+### Tools appear but return errors
+
+```bash
+# Test the server directly in your terminal:
+npx -y boardroom-mcp
+
+# If it starts without errors, the MCP server works.
+# The issue is in your AI client's connection to it.
+# Try removing and re-adding the MCP config.
+```
+
+### Claude Code specific: "MCP server failed to start"
+
+```bash
+# Remove and re-add:
+claude mcp remove boardroom
+claude mcp add boardroom -- npx -y boardroom-mcp
+
+# Verify it's registered:
+claude mcp list
+```
+
+### Permission errors on macOS
+
+```bash
+# If npx can't write to the cache:
+sudo chown -R $(whoami) ~/.npm
+npm cache clean --force
+```
+
+### Platform-specific config cheat sheet
+
+| Platform | Config File | Key Name | Restart Method |
+|----------|------------|----------|----------------|
+| Claude Desktop | `claude_desktop_config.json` | `mcpServers` | Quit + reopen app |
+| Claude Code | `.mcp.json` or `claude mcp add` | `mcpServers` | Auto-reloads |
+| Cursor | `.cursor/mcp.json` or Settings → MCP | `mcpServers` | Restart Cursor |
+| Windsurf | `.windsurf/mcp.json` or Settings → MCP | `mcpServers` | Restart Windsurf |
+| VS Code | `.vscode/mcp.json` | ⚠️ `servers` | Reload Window |
+| ChatGPT Desktop | Settings → Developer → Connectors | `mcpServers` | Toggle connector |
+| Codex CLI | `~/.codex/config.toml` or `codex mcp add` | `mcp_servers` (TOML) | Auto-reloads |
+| Antigravity | `.mcp.json` | `mcpServers` | Auto-reloads |
+| OpenClaw | `openclaw.json` | `gateway.mcpServers` | Restart gateway |
 
 ---
 

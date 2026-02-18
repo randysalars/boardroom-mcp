@@ -24,13 +24,13 @@ import { reportOutcomeTool } from './tools/report.js';
 
 const server = new McpServer({
     name: 'boardroom-mcp',
-    version: '0.1.0',
+    version: '0.2.0',
 });
 
 // ── Tool 1: analyze ──────────────────────────────────────────────
 server.tool(
     'analyze',
-    'Run a full Boardroom consultation. Routes your question to the most relevant advisors (450+ seats across 38 councils), generates mandatory tension between opposing viewpoints, and synthesizes a verdict with concrete recommendation paths.',
+    'Run a Boardroom consultation. Routes your question to relevant advisors, loads their philosophies and decision criteria, searches institutional memory for precedents, and provides a structured analysis with mandatory tension between opposing viewpoints. Demo mode includes 3 named advisors; full protocol files unlock 450+ advisors across 38 councils.',
     {
         task: z.string().describe('The decision, question, or task to analyze'),
     },
@@ -50,7 +50,7 @@ server.tool(
 // ── Tool 3: query_intelligence ───────────────────────────────────
 server.tool(
     'query_intelligence',
-    'Search the Boardroom LEDGER (persistent decision memory) and Wisdom Codex for relevant precedents, past decisions, and distilled insights. Returns matches with timestamps, verdicts, and wisdom entries.',
+    'Search the Boardroom LEDGER (persistent decision memory) and Wisdom Codex for relevant precedents, past decisions, and distilled insights. Returns keyword-matched results with timestamps and excerpts. The LEDGER grows each time you use report_outcome.',
     {
         query: z.string().describe('The search query — topic, keyword, or question'),
         limit: z.number().optional().default(10).describe('Max results to return'),
@@ -61,17 +61,18 @@ server.tool(
 // ── Tool 4: trust_lookup ─────────────────────────────────────────
 server.tool(
     'trust_lookup',
-    'Look up the trust profile for an AI agent. Returns a 6-dimension trust vector (reliability, honesty, follow-through, outcome quality, stability, risk profile), composite score, and recommendation (trust/verify/caution/avoid).',
+    'Look up the trust profile for any entity (AI agent, tool, vendor, platform). Returns a 6-dimension trust vector (reliability, honesty, follow-through, outcome quality, stability, risk profile), composite score, and recommendation (trust/verify/caution/avoid). New entities return a default "unknown" profile — use report_outcome to build trust data over time.',
     {
-        agentId: z.string().describe('The agent ID to look up'),
+        entity: z.string().describe('The entity to look up — an agent name, tool, vendor, or platform'),
+        context: z.string().optional().describe('Optional context about how you are using this entity'),
     },
-    async ({ agentId }) => trustLookupTool(agentId),
+    async ({ entity }) => trustLookupTool(entity),
 );
 
 // ── Tool 5: report_outcome ───────────────────────────────────────
 server.tool(
     'report_outcome',
-    'Report the outcome of a decision for the Boardroom learning system. Records what happened, whether the original recommendation was followed, and what was learned. Feeds the Knowledge Flywheel.',
+    'Report the outcome of a decision for the Boardroom learning system. Records what happened, whether the original recommendation was followed, and what was learned. Feeds the Knowledge Flywheel. Returns a warning if the outcome could not be persisted to disk.',
     {
         task: z.string().describe('The original task or decision'),
         outcome: z.string().describe('What actually happened — result, success/failure, learnings'),

@@ -5,6 +5,7 @@
 
 import fs from 'fs/promises';
 import path from 'path';
+import { fileURLToPath } from 'url';
 
 // ── Configurable Paths ──────────────────────────────────────────
 // Users can set BOARDROOM_ROOT to point to their protocol files directory.
@@ -23,10 +24,10 @@ export const TRUST_ORACLE_PATH = process.env.BOARDROOM_TRUST_PATH
     || path.join(HOME, '.boardroom/trust-oracle.json');
 
 // Demo council path (included with the package)
-export const DEMO_ROOT = path.join(
-    path.dirname(new URL(import.meta.url).pathname),
-    '../demo',
-);
+// Uses fileURLToPath for cross-platform compatibility (fixes Windows path issue)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+export const DEMO_ROOT = path.join(__dirname, '../demo');
 
 /**
  * Safely read a file, returning empty string on failure.
@@ -73,11 +74,18 @@ export function now(): string {
 
 /**
  * Check if the full protocol files are installed.
+ * Checks for SYSTEM_PROMPT.md AND at least one council directory to avoid
+ * false positives from partial installs.
  */
 export async function hasProtocolFiles(): Promise<boolean> {
     try {
         await fs.access(path.join(MASTERMIND_ROOT, 'SYSTEM_PROMPT.md'));
-        return true;
+        // Also verify at least one council-like directory or seats file exists
+        const entries = await fs.readdir(MASTERMIND_ROOT);
+        const hasCouncilContent = entries.some((e) =>
+            e === 'seats' || e === 'COGNITIVE_DOSSIERS.md' || e === 'SIGNATURE_QUESTIONS.md',
+        );
+        return hasCouncilContent;
     } catch {
         return false;
     }

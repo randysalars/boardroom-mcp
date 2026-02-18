@@ -11,13 +11,14 @@ const SEVERITY_KEYWORDS: Record<string, string[]> = {
 };
 
 const COUNCIL_ROUTING: Record<string, { councils: string[]; reason: string }> = {
-    technology: { councils: ['Technology', 'AI & Robotics'], reason: 'Technical decision' },
-    strategy: { councils: ['Business', 'Keystone'], reason: 'Strategic decision' },
+    technology: { councils: ['Technology'], reason: 'Technical decision' },
+    strategy: { councils: ['Keystone', 'Business'], reason: 'Strategic decision' },
     marketing: { councils: ['Marketing', 'E-commerce'], reason: 'Marketing & growth' },
     product: { councils: ['Business', 'E-commerce'], reason: 'Product decision' },
     crisis: { councils: ['Keystone', 'Business', 'Technology'], reason: 'Crisis response' },
     ethics: { councils: ['Keystone', 'Singularity'], reason: 'Ethics & values' },
-    general: { councils: ['Business', 'Keystone'], reason: 'General decision' },
+    operations: { councils: ['Business', 'E-commerce'], reason: 'Operations & workflow' },
+    general: { councils: ['Keystone', 'Business'], reason: 'General decision' },
 };
 
 function classifySeverity(task: string): string {
@@ -30,16 +31,27 @@ function classifySeverity(task: string): string {
 
 function routeToCouncils(task: string): { councils: string[]; reason: string } {
     const lower = task.toLowerCase();
-    const techWords = ['code', 'api', 'server', 'deploy', 'database', 'debug', 'build'];
-    const stratWords = ['strategy', 'revenue', 'compete', 'roadmap', 'invest'];
-    const marketWords = ['marketing', 'seo', 'content', 'ads', 'growth', 'social'];
-    const crisisWords = ['crisis', 'emergency', 'outage', 'breach'];
 
-    if (crisisWords.some((w) => lower.includes(w))) return COUNCIL_ROUTING.crisis;
-    if (techWords.some((w) => lower.includes(w))) return COUNCIL_ROUTING.technology;
-    if (stratWords.some((w) => lower.includes(w))) return COUNCIL_ROUTING.strategy;
-    if (marketWords.some((w) => lower.includes(w))) return COUNCIL_ROUTING.marketing;
-    return COUNCIL_ROUTING.general;
+    // Score-based routing — same pattern as analyze.ts
+    const rules: [string, string[]][] = [
+        ['crisis', ['crisis', 'emergency', 'outage', 'breach', 'incident']],
+        ['technology', ['code', 'api', 'server', 'deploy', 'database', 'debug', 'architecture', 'refactor']],
+        ['strategy', ['strategy', 'revenue', 'compete', 'roadmap', 'invest', 'moat', 'pivot']],
+        ['marketing', ['marketing', 'seo', 'content strategy', 'ads', 'growth', 'social media', 'campaign']],
+        ['product', ['product', 'feature', 'ux', 'design', 'pricing', 'launch', 'onboarding']],
+        ['ethics', ['ethics', 'values', 'moral', 'trust', 'privacy']],
+        ['operations', ['process', 'workflow', 'automate', 'optimize', 'pipeline', 'cron']],
+    ];
+
+    const scores: Record<string, number> = {};
+    for (const [type, keywords] of rules) {
+        const score = keywords.filter((kw) => lower.includes(kw)).length;
+        if (score > 0) scores[type] = score;
+    }
+
+    const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]);
+    const best = sorted[0]?.[0] || 'general';
+    return COUNCIL_ROUTING[best] || COUNCIL_ROUTING.general;
 }
 
 export async function checkGovernanceTool(task: string) {

@@ -1,5 +1,5 @@
 /**
- * trust tool — 6-dimension trust vector for AI agents.
+ * trust tool — 6-dimension trust vector for any entity.
  */
 
 import { TRUST_ORACLE_PATH, safeReadFile, safeParseJSON, mcpSuccess, mcpError } from '../utils.js';
@@ -26,29 +26,42 @@ function getRecommendation(composite: number): string {
     return '🚫 AVOID — Insufficient trust, do not delegate critical tasks';
 }
 
-export async function trustLookupTool(agentId: string) {
+export async function trustLookupTool(entity: string) {
     try {
         const content = await safeReadFile(TRUST_ORACLE_PATH);
-        const oracle = safeParseJSON<TrustOracle>(content);
+        const oracle = content ? safeParseJSON<TrustOracle>(content) : null;
 
-        if (!oracle || !oracle.agents || !oracle.agents[agentId]) {
+        if (!oracle || !oracle.agents || !oracle.agents[entity]) {
+            const hasOracleFile = !!content;
+
             const result = [
-                `# Trust Lookup: ${agentId}`,
+                `# Trust Lookup: ${entity}`,
                 ``,
-                `**Status:** ❓ Unknown Agent`,
+                `**Status:** ❓ Unknown Entity`,
                 ``,
-                `No trust profile found for agent "${agentId}".`,
+                `No trust profile found for "${entity}".`,
                 ``,
-                `This agent has not yet been evaluated by the Trust Oracle.`,
-                `Use \`report_outcome()\` after interactions to build their trust profile.`,
+                hasOracleFile
+                    ? `The Trust Oracle file exists but has no data for this entity.`
+                    : `The Trust Oracle file does not exist yet at \`${TRUST_ORACLE_PATH}\`.`,
+                ``,
+                `**How trust profiles are built:**`,
+                `- Use \`report_outcome()\` after interactions with this entity`,
+                `- Each outcome contributes to the 6-dimension trust vector`,
+                `- Trust scores update automatically as evidence accumulates`,
                 ``,
                 `**Default Recommendation:** ${getRecommendation(0.5)}`,
+                ``,
+                `> **Tip:** To bootstrap trust data, create a JSON file at \`${TRUST_ORACLE_PATH}\` with the structure:`,
+                `> \`\`\`json`,
+                `> { "agents": { "${entity}": { "reliability": 0.5, "honesty": 0.5, "followThrough": 0.5, "outcomeQuality": 0.5, "stability": 0.5, "riskProfile": 0.5, "interactions": 0, "lastUpdated": "${new Date().toISOString()}" } } }`,
+                `> \`\`\``,
             ].join('\n');
 
             return mcpSuccess(result);
         }
 
-        const profile = oracle.agents[agentId];
+        const profile = oracle.agents[entity];
         const composite = (
             profile.reliability * 0.25 +
             profile.honesty * 0.20 +
@@ -59,7 +72,7 @@ export async function trustLookupTool(agentId: string) {
         );
 
         const result = [
-            `# Trust Lookup: ${agentId}`,
+            `# Trust Lookup: ${entity}`,
             ``,
             `## 6-Dimension Trust Vector`,
             `| Dimension | Score | Weight |`,
