@@ -110,13 +110,19 @@ Add to your `~/.openclaw/openclaw.json` under the gateway's `mcpServers` key:
 
 ## ✅ Verify Installation
 
-After configuring, ask your AI agent:
+After configuring, restart your AI client and ask:
 
 ```
 Use the analyze tool: "Test — is the Boardroom working?"
 ```
 
-You should see output starting with `# Boardroom Analysis` listing the demo council advisors. If you see this, the server is working correctly.
+**✅ Success:** You'll see output starting with `# Boardroom Analysis` with advisor positions from Warren Buffett, Linus Torvalds, and Marcus Aurelius.
+
+**❌ If Claude ignores the tool:** It means the MCP server isn't loaded. Check that:
+1. Your config file is in the right location (see Quick Start above)
+2. The JSON is valid (no trailing commas)
+3. You restarted the AI client after editing the config
+4. Node.js 18+ is installed (`node --version`)
 
 ---
 
@@ -172,7 +178,7 @@ Your AI Client (Claude, Cursor, Windsurf, Antigravity, OpenClaw)
          ▼
   Boardroom MCP Server
          │
-         ├── demo/              ← Included demo council (5 advisors)
+         ├── demo/              ← Demo council (Buffett, Torvalds, Aurelius)
          │
          ▼
   ~/.ai/boardroom/          ← Full protocol files (optional upgrade)
@@ -192,7 +198,7 @@ Your AI Client (Claude, Cursor, Windsurf, Antigravity, OpenClaw)
 
 ### Free (This Repo)
 - ✅ MCP server with 5 tools
-- ✅ Demo council (5 advisors: Strategist, Engineer, Skeptic, Visionary, Guardian)
+- ✅ Demo council (3 named advisors: Warren Buffett, Linus Torvalds, Marcus Aurelius)
 - ✅ MIT license
 
 ### Full System ([salars.net/boardroom](https://salars.net/boardroom))
@@ -225,6 +231,7 @@ Your AI Client (Claude, Cursor, Windsurf, Antigravity, OpenClaw)
 | `npx boardroom-mcp` fails | Package may not be published yet — use Option C (clone and build) |
 | "No advisors found" | Demo council ships with the package. Check `demo/seats.md` exists |
 | Tools don't appear in Claude | Restart Claude Desktop after editing config. Check JSON syntax. |
+| Claude ignores `analyze` tool | The MCP server isn't loaded. Verify config location, restart the client, and check `node --version` is 18+. |
 | `ENOENT` errors | If using full protocol files, set `BOARDROOM_ROOT` to your `.ai/boardroom` path |
 
 ---
