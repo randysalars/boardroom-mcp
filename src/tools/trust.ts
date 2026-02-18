@@ -1,7 +1,10 @@
 /**
  * trust tool — 6-dimension trust vector for any entity.
  *
- * Uses shared TrustProfile/TrustOracle types from utils.ts.
+ * Provides composite scoring with weighted dimensions and
+ * actionable recommendations based on trust thresholds.
+ *
+ * @module tools/trust
  */
 
 import {
@@ -10,10 +13,16 @@ import {
     safeParseJSON,
     mcpSuccess,
     mcpError,
-    TrustProfile,
-    TrustOracle,
 } from '../utils.js';
+import type { McpToolResponse, TrustOracle } from '../types.js';
+import { TRUST_WEIGHTS, computeCompositeScore } from '../types.js';
 
+/**
+ * Map a composite trust score to a human-readable recommendation.
+ *
+ * @param composite - Weighted composite score in [0, 1].
+ * @returns Emoji + recommendation string.
+ */
 function getRecommendation(composite: number): string {
     if (composite >= 0.85) return '✅ TRUST — High confidence, minimal oversight needed';
     if (composite >= 0.65) return '🔍 VERIFY — Good standing, periodic checks recommended';
@@ -21,7 +30,34 @@ function getRecommendation(composite: number): string {
     return '🚫 AVOID — Insufficient trust, do not delegate critical tasks';
 }
 
-export async function trustLookupTool(entity: string, context?: string) {
+/**
+ * Format a percentage from a 0–1 score.
+ *
+ * @param score - Score in [0, 1].
+ * @returns Formatted string like "75%".
+ */
+function pct(score: number): string {
+    return `${(score * 100).toFixed(0)}%`;
+}
+
+/**
+ * Format a percentage with one decimal from a 0–1 score.
+ *
+ * @param score - Score in [0, 1].
+ * @returns Formatted string like "72.5%".
+ */
+function pctDecimal(score: number): string {
+    return `${(score * 100).toFixed(1)}%`;
+}
+
+/**
+ * Look up the trust profile for an entity.
+ *
+ * @param entity - Agent, tool, vendor, or platform name.
+ * @param context - Optional usage context shown in the output.
+ * @returns MCP response with the trust vector or "unknown" guidance.
+ */
+export async function trustLookupTool(entity: string, context?: string): Promise<McpToolResponse> {
     try {
         const content = await safeReadFile(TRUST_ORACLE_PATH);
         const oracle = content ? safeParseJSON<TrustOracle>(content) : null;
@@ -58,14 +94,7 @@ export async function trustLookupTool(entity: string, context?: string) {
         }
 
         const profile = oracle.agents[entity];
-        const composite = (
-            profile.reliability * 0.25 +
-            profile.honesty * 0.20 +
-            profile.followThrough * 0.20 +
-            profile.outcomeQuality * 0.15 +
-            profile.stability * 0.10 +
-            profile.riskProfile * 0.10
-        );
+        const composite = computeCompositeScore(profile);
 
         const result = [
             `# Trust Lookup: ${entity}`,
@@ -74,14 +103,14 @@ export async function trustLookupTool(entity: string, context?: string) {
             `## 6-Dimension Trust Vector`,
             `| Dimension | Score | Weight |`,
             `|-----------|-------|--------|`,
-            `| Reliability | ${(profile.reliability * 100).toFixed(0)}% | 25% |`,
-            `| Honesty | ${(profile.honesty * 100).toFixed(0)}% | 20% |`,
-            `| Follow-Through | ${(profile.followThrough * 100).toFixed(0)}% | 20% |`,
-            `| Outcome Quality | ${(profile.outcomeQuality * 100).toFixed(0)}% | 15% |`,
-            `| Stability | ${(profile.stability * 100).toFixed(0)}% | 10% |`,
-            `| Risk Profile | ${(profile.riskProfile * 100).toFixed(0)}% | 10% |`,
+            `| Reliability | ${pct(profile.reliability)} | ${pct(TRUST_WEIGHTS.reliability)} |`,
+            `| Honesty | ${pct(profile.honesty)} | ${pct(TRUST_WEIGHTS.honesty)} |`,
+            `| Follow-Through | ${pct(profile.followThrough)} | ${pct(TRUST_WEIGHTS.followThrough)} |`,
+            `| Outcome Quality | ${pct(profile.outcomeQuality)} | ${pct(TRUST_WEIGHTS.outcomeQuality)} |`,
+            `| Stability | ${pct(profile.stability)} | ${pct(TRUST_WEIGHTS.stability)} |`,
+            `| Risk Profile | ${pct(profile.riskProfile)} | ${pct(TRUST_WEIGHTS.riskProfile)} |`,
             ``,
-            `**Composite Score:** ${(composite * 100).toFixed(1)}%`,
+            `**Composite Score:** ${pctDecimal(composite)}`,
             `**Interactions:** ${profile.interactions}`,
             `**Last Updated:** ${profile.lastUpdated}`,
             ``,

@@ -1,36 +1,69 @@
 /**
  * Shared utilities for the Boardroom MCP Server.
- * Handles file I/O for LEDGER, Wisdom Codex, and boardroom filesystem.
+ *
+ * Handles file I/O, path resolution, classification, search,
+ * and trust oracle operations. All tools import from here to
+ * guarantee behavioral consistency.
+ *
+ * @module utils
  */
 
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import type {
+    McpToolResponse,
+    Classification,
+    ClassificationRule,
+    CouncilRoute,
+    KeywordResult,
+    TrustProfile,
+    TrustOracle,
+    TrustUpdateResult,
+} from './types.js';
 
-// ── Configurable Paths ──────────────────────────────────────────
-// Users can set BOARDROOM_ROOT to point to their protocol files directory.
-// Default: ~/.ai/boardroom
+// Re-export types so tools can import everything from utils
+export type { TrustProfile, TrustOracle, TrustUpdateResult };
+
+// ── Path Configuration ───────────────────────────────────────────
+// All paths are configurable via environment variables for portability.
+
 const HOME = process.env.HOME || process.env.USERPROFILE || '/home/user';
 
+/** Root directory for protocol files. Override: `BOARDROOM_ROOT` env var. */
 export const BOARDROOM_ROOT = process.env.BOARDROOM_ROOT
     || path.join(HOME, '.ai/boardroom');
 
+/** Mastermind subdirectory containing councils, seats, and system prompts. */
 export const MASTERMIND_ROOT = path.join(BOARDROOM_ROOT, 'mastermind');
+
+/** Path to the LEDGER — persistent decision memory (Markdown). */
 export const LEDGER_PATH = path.join(BOARDROOM_ROOT, 'LEDGER.md');
+
+/** Path to the Wisdom Codex — distilled principles (Markdown). */
 export const WISDOM_PATH = path.join(MASTERMIND_ROOT, 'BOARD_WISDOM.md');
+
+/** Path to structured LEDGER index (JSON). Reserved for future indexing. */
 export const LEDGER_JSON_PATH = path.join(MASTERMIND_ROOT, 'boardroom_ledger.json');
 
+/** Path to Trust Oracle data file. Override: `BOARDROOM_TRUST_PATH` env var. */
 export const TRUST_ORACLE_PATH = process.env.BOARDROOM_TRUST_PATH
     || path.join(HOME, '.boardroom/trust-oracle.json');
 
-// Demo council path (included with the package)
-// Uses fileURLToPath for cross-platform compatibility (fixes Windows path issue)
+// Demo council path — ships with the package
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+/** Path to bundled demo council (3 advisors). Resolves relative to dist/. */
 export const DEMO_ROOT = path.join(__dirname, '../demo');
+
+// ── File I/O ─────────────────────────────────────────────────────
 
 /**
  * Safely read a file, returning empty string on failure.
+ *
+ * @param filePath - Absolute path to the file.
+ * @returns File contents or empty string if the file doesn't exist.
  */
 export async function safeReadFile(filePath: string): Promise<string> {
     try {
@@ -41,7 +74,10 @@ export async function safeReadFile(filePath: string): Promise<string> {
 }
 
 /**
- * Safely parse JSON, returning null on failure.
+ * Safely parse a JSON string, returning null on failure.
+ *
+ * @param content - Raw JSON string.
+ * @returns Parsed object or null if the JSON is invalid.
  */
 export function safeParseJSON<T>(content: string): T | null {
     try {
@@ -51,49 +87,58 @@ export function safeParseJSON<T>(content: string): T | null {
     }
 }
 
+// ── MCP Response Helpers ─────────────────────────────────────────
+
 /**
- * Format an MCP tool success response.
+ * Format a successful MCP tool response.
+ *
+ * @param text - Markdown-formatted response body.
  */
-export function mcpSuccess(text: string) {
+export function mcpSuccess(text: string): McpToolResponse {
     return { content: [{ type: 'text' as const, text }] };
 }
 
 /**
  * Format an MCP tool error response.
+ *
+ * @param text - Error description (will be prefixed with ❌).
  */
-export function mcpError(text: string) {
+export function mcpError(text: string): McpToolResponse {
     return { content: [{ type: 'text' as const, text: `❌ ${text}` }], isError: true as const };
 }
 
 /**
- * Get the current ISO timestamp.
+ * Get the current UTC timestamp in ISO 8601 format.
  */
 export function now(): string {
     return new Date().toISOString();
 }
 
+// ── Protocol File Detection ──────────────────────────────────────
+
 /**
  * Check if the full protocol files are installed.
- * Checks for SYSTEM_PROMPT.md AND at least one council directory to avoid
- * false positives from partial installs.
+ *
+ * Requires SYSTEM_PROMPT.md AND at least one council-level file
+ * to avoid false positives from partial installs.
+ *
+ * @returns `true` if the user has installed the full protocol files.
  */
 export async function hasProtocolFiles(): Promise<boolean> {
     try {
         await fs.access(path.join(MASTERMIND_ROOT, 'SYSTEM_PROMPT.md'));
-        // Also verify at least one council-like directory or seats file exists
         const entries = await fs.readdir(MASTERMIND_ROOT);
-        const hasCouncilContent = entries.some((e) =>
+        return entries.some((e) =>
             e === 'seats' || e === 'COGNITIVE_DOSSIERS.md' || e === 'SIGNATURE_QUESTIONS.md',
         );
-        return hasCouncilContent;
     } catch {
         return false;
     }
 }
 
-// ── Shared Classification ────────────────────────────────────────
+// ── Task Classification ──────────────────────────────────────────
 
-/** Map decision types to council categories (normalized to lowercase). */
+/** Map decision types to lowercase council identifiers for seat loading. */
 export const ROUTING_TABLE: Record<string, string[]> = {
     strategy: ['keystone', 'business'],
     marketing: ['marketing', 'ecommerce'],
@@ -106,8 +151,8 @@ export const ROUTING_TABLE: Record<string, string[]> = {
     general: ['keystone', 'business'],
 };
 
-/** Classification rules: [type, keywords]. */
-const CLASSIFICATION_RULES: [string, string[]][] = [
+/** Classification rules — ordered by specificity (most niche first). */
+const CLASSIFICATION_RULES: ClassificationRule[] = [
     ['singularity', ['omega', 'singularity', 'agi', 'superintelligence', 'consciousness']],
     ['technology', ['code', 'debug', 'algorithm', 'deploy', 'server', 'api', 'database', 'mcp', 'architecture', 'refactor', 'test', 'ci']],
     ['marketing', ['marketing', 'seo', 'content strategy', 'social media', 'brand', 'audience', 'ads', 'growth', 'campaign', 'funnel']],
@@ -118,15 +163,15 @@ const CLASSIFICATION_RULES: [string, string[]][] = [
     ['ethics', ['ethics', 'values', 'moral', 'trust', 'privacy', 'fairness']],
 ];
 
-/** Governance-specific severity keywords. */
+/** Severity keywords — checked in priority order (critical first). */
 export const SEVERITY_KEYWORDS: Record<string, string[]> = {
     critical: ['irreversible', 'delete', 'payment', 'security', 'breach', 'fire', 'legal'],
     standard: ['strategy', 'architecture', 'roadmap', 'partnership', 'pricing'],
     routine: ['bug', 'style', 'refactor', 'docs', 'config'],
 };
 
-/** Governance-specific council names (title-case for display). */
-export const COUNCIL_ROUTING: Record<string, { councils: string[]; reason: string }> = {
+/** Title-case council names and routing rationale for governance display. */
+export const COUNCIL_ROUTING: Record<string, CouncilRoute> = {
     technology: { councils: ['Technology'], reason: 'Technical decision' },
     strategy: { councils: ['Keystone', 'Business'], reason: 'Strategic decision' },
     marketing: { councils: ['Marketing', 'E-commerce'], reason: 'Marketing & growth' },
@@ -139,10 +184,15 @@ export const COUNCIL_ROUTING: Record<string, { councils: string[]; reason: strin
 };
 
 /**
- * Score-based task classification — matches ALL rules and returns the highest-scoring type.
- * Single source of truth used by both analyze and governance tools.
+ * Score-based task classification.
+ *
+ * Evaluates ALL rules and returns the highest-scoring category.
+ * Single source of truth — used by both `analyze` and `check_governance`.
+ *
+ * @param task - The user's decision, question, or task description.
+ * @returns The best-matching category and all matched keywords.
  */
-export function classifyTask(task: string): { type: string; keywords: string[] } {
+export function classifyTask(task: string): Classification {
     const lower = task.toLowerCase();
     const scores: Record<string, number> = {};
     const allMatched: string[] = [];
@@ -166,7 +216,10 @@ export function classifyTask(task: string): { type: string; keywords: string[] }
 }
 
 /**
- * Classify task severity for governance checks.
+ * Classify task severity for governance routing.
+ *
+ * @param task - The user's task description.
+ * @returns Severity level: "critical", "standard", or "routine".
  */
 export function classifySeverity(task: string): string {
     const lower = task.toLowerCase();
@@ -176,15 +229,23 @@ export function classifySeverity(task: string): string {
     return 'routine';
 }
 
-// ── Shared Search Utilities ──────────────────────────────────────
+// ── Search Utilities ─────────────────────────────────────────────
+
+/** Minimum keyword length to include in search (inclusive). */
+const MIN_KEYWORD_LENGTH = 3;
 
 /**
  * Extract search keywords from a query string.
- * Returns a warning flag when all keywords are filtered out due to length.
+ *
+ * Filters out words shorter than {@link MIN_KEYWORD_LENGTH} characters.
+ * Returns a warning flag when ALL words are filtered out.
+ *
+ * @param query - Raw search query.
+ * @returns Extracted keywords and whether filtering removed everything.
  */
-export function extractKeywords(query: string): { keywords: string[]; allFiltered: boolean } {
+export function extractKeywords(query: string): KeywordResult {
     const words = query.toLowerCase().split(/\s+/).filter(Boolean);
-    const keywords = words.filter((w) => w.length > 2);
+    const keywords = words.filter((w) => w.length >= MIN_KEYWORD_LENGTH);
     return {
         keywords,
         allFiltered: words.length > 0 && keywords.length === 0,
@@ -192,40 +253,52 @@ export function extractKeywords(query: string): { keywords: string[]; allFiltere
 }
 
 /**
- * Parse wisdom entries from the Wisdom Codex — consistent format matching.
- * Matches entries starting with `- [`, `- *`, `> `, or any `- ` bullet > 10 chars.
+ * Parse wisdom entries from the Wisdom Codex.
+ *
+ * Matches entries starting with `- [`, `- *`, `> `, or any `- ` bullet
+ * longer than 10 characters.
+ *
+ * @param wisdom - Raw Wisdom Codex content.
+ * @returns Array of individual wisdom entries.
  */
 export function parseWisdomEntries(wisdom: string): string[] {
+    if (!wisdom) return [];
     return wisdom.split('\n').filter((l) =>
         l.startsWith('- [') || l.startsWith('- *') || l.startsWith('> ') || (l.startsWith('- ') && l.length > 10),
     );
 }
 
-// ── Trust Oracle I/O ─────────────────────────────────────────────
+// ── Trust Oracle ─────────────────────────────────────────────────
 
-export interface TrustProfile {
-    reliability: number;
-    honesty: number;
-    followThrough: number;
-    outcomeQuality: number;
-    stability: number;
-    riskProfile: number;
-    interactions: number;
-    lastUpdated: string;
-}
+/** EMA smoothing factor for trust score updates. */
+const TRUST_EMA_ALPHA = 0.2;
 
-export interface TrustOracle {
-    agents: Record<string, TrustProfile>;
+/** Score delta for successful outcomes. */
+const TRUST_DELTA_SUCCESS = 0.1;
+
+/** Score delta for failed outcomes (negative, asymmetric — failures weigh more). */
+const TRUST_DELTA_FAILURE = -0.15;
+
+/** Clamp a value to the [0, 1] range. */
+function clamp01(value: number): number {
+    return Math.max(0, Math.min(1, value));
 }
 
 /**
  * Update (or create) a trust profile for an entity based on an outcome report.
- * Uses exponential moving average with α = 0.2 for smooth score evolution.
+ *
+ * Uses exponential moving average (α = {@link TRUST_EMA_ALPHA}) for smooth
+ * score evolution. Deltas are asymmetric — failures erode trust faster
+ * than successes build it.
+ *
+ * @param entity - The entity name (agent, tool, vendor, platform).
+ * @param success - Whether the outcome was positive.
+ * @returns Whether the update succeeded and any error message.
  */
 export async function updateTrustOracle(
     entity: string | undefined,
     success: boolean,
-): Promise<{ updated: boolean; error?: string }> {
+): Promise<TrustUpdateResult> {
     if (!entity) return { updated: false, error: 'No entity provided' };
 
     try {
@@ -235,18 +308,15 @@ export async function updateTrustOracle(
             : { agents: {} };
 
         const existing = oracle.agents[entity];
-        const alpha = 0.2; // EMA smoothing factor
-        const delta = success ? 0.1 : -0.15; // Asymmetric — failures weigh more
+        const delta = success ? TRUST_DELTA_SUCCESS : TRUST_DELTA_FAILURE;
 
         if (existing) {
-            // EMA update on relevant dimensions
-            existing.reliability = Math.max(0, Math.min(1, existing.reliability + alpha * delta));
-            existing.outcomeQuality = Math.max(0, Math.min(1, existing.outcomeQuality + alpha * delta));
-            existing.followThrough = Math.max(0, Math.min(1, existing.followThrough + alpha * (success ? 0.05 : -0.1)));
+            existing.reliability = clamp01(existing.reliability + TRUST_EMA_ALPHA * delta);
+            existing.outcomeQuality = clamp01(existing.outcomeQuality + TRUST_EMA_ALPHA * delta);
+            existing.followThrough = clamp01(existing.followThrough + TRUST_EMA_ALPHA * (success ? 0.05 : -0.1));
             existing.interactions += 1;
             existing.lastUpdated = now();
         } else {
-            // Bootstrap new profile at neutral 0.5
             oracle.agents[entity] = {
                 reliability: 0.5 + delta,
                 honesty: 0.5,
@@ -259,7 +329,6 @@ export async function updateTrustOracle(
             };
         }
 
-        // Ensure directory exists and write
         await fs.mkdir(path.dirname(TRUST_ORACLE_PATH), { recursive: true });
         await fs.writeFile(TRUST_ORACLE_PATH, JSON.stringify(oracle, null, 2), 'utf-8');
         return { updated: true };

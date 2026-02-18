@@ -1,8 +1,10 @@
 /**
  * intelligence tool — Search LEDGER and Wisdom Codex.
  *
- * Uses shared extractKeywords and parseWisdomEntries from utils.ts
+ * Uses shared keyword extraction and wisdom parsing from `utils.ts`
  * for consistent search behavior across all tools.
+ *
+ * @module tools/intelligence
  */
 
 import {
@@ -14,8 +16,19 @@ import {
     mcpSuccess,
     mcpError,
 } from '../utils.js';
+import type { McpToolResponse } from '../types.js';
 
-export async function queryIntelligenceTool(query: string, limit: number = 10) {
+/** Maximum excerpt length for LEDGER session previews. */
+const SESSION_EXCERPT_LENGTH = 400;
+
+/**
+ * Search institutional memory for relevant precedents and wisdom.
+ *
+ * @param query - Search query — topic, keyword, or question.
+ * @param limit - Maximum number of results per source (default: 10).
+ * @returns MCP response with matched LEDGER sessions and Wisdom entries.
+ */
+export async function queryIntelligenceTool(query: string, limit: number = 10): Promise<McpToolResponse> {
     try {
         const [ledger, wisdom] = await Promise.all([
             safeReadFile(LEDGER_PATH),
@@ -37,7 +50,7 @@ export async function queryIntelligenceTool(query: string, limit: number = 10) {
             return mcpSuccess(result);
         }
 
-        // Search LEDGER sessions
+        // Search LEDGER sessions by keyword score
         const sessions = ledger ? ledger.split(/^## /m).slice(1) : [];
         const matchedSessions = sessions
             .map((session) => {
@@ -47,7 +60,7 @@ export async function queryIntelligenceTool(query: string, limit: number = 10) {
                     0,
                 );
                 const title = session.split('\n')[0]?.trim() || 'Untitled';
-                return { title, score, excerpt: session.substring(0, 400) };
+                return { title, score, excerpt: session.substring(0, SESSION_EXCERPT_LENGTH) };
             })
             .filter((s) => s.score > 0)
             .sort((a, b) => b.score - a.score)

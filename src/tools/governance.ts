@@ -1,8 +1,10 @@
 /**
- * governance tool — Task classification + advisor routing.
+ * governance tool — Task classification + severity routing.
  *
- * Uses the shared classifyTask and classifySeverity from utils.ts
- * to ensure consistent routing with the analyze tool.
+ * Uses shared classification and severity logic from `utils.ts`
+ * to ensure consistent routing with the `analyze` tool.
+ *
+ * @module tools/governance
  */
 
 import {
@@ -12,14 +14,27 @@ import {
     mcpSuccess,
     mcpError,
 } from '../utils.js';
+import type { McpToolResponse } from '../types.js';
 
-export async function checkGovernanceTool(task: string) {
+/** Map severity levels to display emoji. */
+const SEVERITY_EMOJI: Record<string, string> = {
+    critical: '🔴',
+    standard: '🟡',
+    routine: '🟢',
+};
+
+/**
+ * Classify a task and determine governance routing.
+ *
+ * @param task - The task or decision to classify.
+ * @returns MCP response with classification, severity, and recommended action.
+ */
+export async function checkGovernanceTool(task: string): Promise<McpToolResponse> {
     try {
         const severity = classifySeverity(task);
         const classification = classifyTask(task);
         const routing = COUNCIL_ROUTING[classification.type] || COUNCIL_ROUTING.general;
-
-        const severityEmoji = severity === 'critical' ? '🔴' : severity === 'standard' ? '🟡' : '🟢';
+        const emoji = SEVERITY_EMOJI[severity] || '🟢';
 
         const result = [
             `# Governance Check`,
@@ -27,7 +42,7 @@ export async function checkGovernanceTool(task: string) {
             `**Task:** ${task}`,
             `**Classification:** ${classification.type.toUpperCase()}`,
             `**Matched Keywords:** ${classification.keywords.join(', ') || 'none'}`,
-            `**Severity:** ${severityEmoji} ${severity.toUpperCase()}`,
+            `**Severity:** ${emoji} ${severity.toUpperCase()}`,
             `**Councils:** ${routing.councils.join(', ')}`,
             `**Routing Reason:** ${routing.reason}`,
             ``,

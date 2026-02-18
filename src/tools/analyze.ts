@@ -3,6 +3,8 @@
  *
  * Routes questions to relevant councils, loads advisors and precedents,
  * and builds a structured analysis with mandatory tension framework.
+ *
+ * @module tools/analyze
  */
 
 import fs from 'fs/promises';
@@ -21,6 +23,7 @@ import {
     mcpSuccess,
     mcpError,
 } from '../utils.js';
+import type { McpToolResponse, AdvisorDetails, CouncilSeatResult } from '../types.js';
 
 /**
  * Parse advisor entries from a seats.md file.
@@ -32,7 +35,6 @@ function parseAdvisors(content: string): string[] {
     for (const m of memberMatches) {
         advisors.push(m.replace(/board_member:\s*/i, '').trim());
     }
-    // Fallback: parse ## Seat N: Name headers
     if (advisors.length === 0) {
         const seatMatches = content.match(/^## Seat \d+:\s*(.+)/gm) || [];
         for (const m of seatMatches) {
@@ -45,12 +47,7 @@ function parseAdvisors(content: string): string[] {
 /**
  * Extract advisor details (philosophy, criteria, signature question) from seat content.
  */
-function extractAdvisorDetails(content: string, advisorName: string): {
-    philosophy: string;
-    criteria: string;
-    signatureQuestion: string;
-    tensionArea: string;
-} | null {
+function extractAdvisorDetails(content: string, advisorName: string): AdvisorDetails | null {
     // Find the section for this advisor
     const escapedName = advisorName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const sectionRegex = new RegExp(
@@ -78,11 +75,7 @@ function extractAdvisorDetails(content: string, advisorName: string): {
  * Load seats from council directory, with proper fallback to demo.
  * Only falls back to demo when NO full protocol files are installed.
  */
-async function loadCouncilSeats(council: string, hasFull: boolean): Promise<{
-    advisors: string[];
-    content: string;
-    source: string;
-}> {
+async function loadCouncilSeats(council: string, hasFull: boolean): Promise<CouncilSeatResult> {
     if (hasFull) {
         // Try multiple common paths for the council seats
         const candidates = [
@@ -114,7 +107,10 @@ async function loadCouncilSeats(council: string, hasFull: boolean): Promise<{
     }
 }
 
-// Search the LEDGER for precedents
+/** Maximum number of LEDGER precedent excerpts per query. */
+const PRECEDENT_EXCERPT_LENGTH = 300;
+
+/** Search the LEDGER for precedents. */
 async function findPrecedents(query: string, limit: number = 5): Promise<string[]> {
     const ledger = await safeReadFile(LEDGER_PATH);
     if (!ledger) return [];
@@ -131,7 +127,7 @@ async function findPrecedents(query: string, limit: number = 5): Promise<string[
                 0,
             );
             const title = session.split('\n')[0]?.trim() || 'Untitled';
-            return { title, score, excerpt: session.substring(0, 300) };
+            return { title, score, excerpt: session.substring(0, PRECEDENT_EXCERPT_LENGTH) };
         })
         .filter((s) => s.score > 0)
         .sort((a, b) => b.score - a.score)
@@ -159,7 +155,13 @@ async function findWisdom(query: string, limit: number = 5): Promise<string[]> {
         .slice(0, limit);
 }
 
-export async function analyzeTool(task: string) {
+/**
+ * Run a full Boardroom consultation.
+ *
+ * @param task - The decision, question, or task to analyze.
+ * @returns MCP response with multi-advisor analysis and tension framework.
+ */
+export async function analyzeTool(task: string): Promise<McpToolResponse> {
     try {
         const hasFull = await hasProtocolFiles();
         const classification = classifyTask(task);
