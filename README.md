@@ -265,20 +265,50 @@ What Boardroom MCP tools do I have access to? List all 5 tools with a one-line d
 
 ---
 
-### ⚪ OpenClaw
+### 🦞 OpenClaw
 
-Add to your `~/.openclaw/openclaw.json` under the gateway's `mcpServers` key:
-```json
-{
-  "gateway": {
-    "mcpServers": {
-      "boardroom": {
-        "command": "npx",
-        "args": ["-y", "boardroom-mcp"]
-      }
-    }
-  }
-}
+> OpenClaw uses its **skills system** instead of MCP server configs.
+
+**Step 1:** Clone and build the server:
+```bash
+git clone https://github.com/randysalars/boardroom-mcp.git
+cd boardroom-mcp && npm install && npm run build
+```
+
+**Step 2:** Create the skill directory:
+```bash
+mkdir -p ~/.openclaw/skills/boardroom
+```
+
+**Step 3:** Create `~/.openclaw/skills/boardroom/SKILL.md`:
+```markdown
+---
+name: boardroom
+description: Boardroom Mastermind Council — multi-advisor strategic analysis via MCP server.
+metadata: {"clawdbot":{"emoji":"🏛️","always":true,"requires":{"bins":["node"]},"primaryEnv":"BOARDROOM_ROOT"}}
+---
+
+# Boardroom MCP 🏛️
+
+Multi-advisor strategic analysis. Run sessions via:
+
+```bash
+BOARDROOM_ROOT=~/.ai/boardroom node /path/to/boardroom-mcp/dist/index.js
+```
+
+Usage: "Board: Should I raise prices on my SaaS?"
+```
+
+**Step 4:** Add to `~/.openclaw/.env`:
+```bash
+BOARDROOM_ROOT=/path/to/your/.ai/boardroom
+```
+
+**Step 5:** Restart and verify:
+```bash
+systemctl --user restart openclaw-gateway.service
+openclaw skills list | grep boardroom
+# ✓ ready │ 📦 boardroom
 ```
 
 **Test it** — type in the chat:
@@ -537,15 +567,15 @@ npm cache clean --force
 | ChatGPT Desktop | Settings → Developer → Connectors | `mcpServers` | Toggle connector |
 | Codex CLI | `~/.codex/config.toml` or `codex mcp add` | `mcp_servers` (TOML) | Auto-reloads |
 | Antigravity | `.mcp.json` | `mcpServers` | Auto-reloads |
-| OpenClaw | `openclaw.json` | `gateway.mcpServers` | Restart gateway |
+| OpenClaw | `~/.openclaw/skills/boardroom/SKILL.md` | Skills system | Restart gateway |
 
 ---
 
 ## 📬 Stay in the Loop
 
-- 🌐 **[Landing Page](https://salars.net/boardroom)** — Feature overview + waitlist
+- 🌐 **[Landing Page](https://salars.net/boardroom)** — Feature overview + pricing
 - 📖 **[Documentation](https://salars.net/boardroom/docs)** — Complete free → advanced guide
-- 📧 **[Subscribe for Updates](https://salars.net/boardroom#waitlist)** — New councils, protocol updates, features
+- 📧 **[Get Full Access — $29](https://salars.net/boardroom/checkout)** — 450+ advisors, 38 councils, lifetime access
 - 🐦 **[@SalarsNet](https://x.com/salaborsa)** — Tips, demos, and announcements
 
 ---
