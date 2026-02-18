@@ -74,9 +74,57 @@ Add to your MCP settings (Settings → MCP):
 }
 ```
 
+### VS Code (GitHub Copilot)
+
+Create `.vscode/mcp.json` in your project root:
+
+```json
+{
+  "servers": {
+    "boardroom": {
+      "command": "npx",
+      "args": ["-y", "boardroom-mcp"]
+    }
+  }
+}
+```
+
+> Requires Copilot agent mode. Enable via Settings → Copilot → MCP.
+
+### ChatGPT Desktop
+
+Requires ChatGPT Plus/Pro. Go to **Settings → Developer → Connectors** and add a custom MCP server:
+
+```json
+{
+  "mcpServers": {
+    "boardroom": {
+      "command": "npx",
+      "args": ["-y", "boardroom-mcp"]
+    }
+  }
+}
+```
+
+### OpenAI Codex CLI
+
+Add to `~/.codex/config.toml`:
+
+```toml
+[mcp_servers.boardroom]
+type = "stdio"
+command = "npx"
+args = ["-y", "boardroom-mcp"]
+```
+
+Or via CLI:
+```bash
+codex mcp add boardroom -- npx -y boardroom-mcp
+```
+
 ### Antigravity
 
-Add to your MCP configuration file:
+Add to your `.mcp.json` configuration file:
 
 ```json
 {
