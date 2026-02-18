@@ -1,8 +1,19 @@
 /**
  * intelligence tool — Search LEDGER and Wisdom Codex.
+ *
+ * Uses shared extractKeywords and parseWisdomEntries from utils.ts
+ * for consistent search behavior across all tools.
  */
 
-import { LEDGER_PATH, WISDOM_PATH, safeReadFile, mcpSuccess, mcpError } from '../utils.js';
+import {
+    LEDGER_PATH,
+    WISDOM_PATH,
+    safeReadFile,
+    extractKeywords,
+    parseWisdomEntries,
+    mcpSuccess,
+    mcpError,
+} from '../utils.js';
 
 export async function queryIntelligenceTool(query: string, limit: number = 10) {
     try {
@@ -11,8 +22,20 @@ export async function queryIntelligenceTool(query: string, limit: number = 10) {
             safeReadFile(WISDOM_PATH),
         ]);
 
-        const lower = query.toLowerCase();
-        const keywords = lower.split(/\s+/).filter((w) => w.length > 3);
+        const { keywords, allFiltered } = extractKeywords(query);
+
+        // Warn if all keywords were too short to be useful
+        if (allFiltered) {
+            const result = [
+                `# Intelligence Query Results`,
+                ``,
+                `**Query:** "${query}"`,
+                ``,
+                `⚠️ **All query words were too short to search** (≤ 2 characters).`,
+                `Try a more specific query with longer terms for better results.`,
+            ].join('\n');
+            return mcpSuccess(result);
+        }
 
         // Search LEDGER sessions
         const sessions = ledger ? ledger.split(/^## /m).slice(1) : [];
@@ -30,9 +53,9 @@ export async function queryIntelligenceTool(query: string, limit: number = 10) {
             .sort((a, b) => b.score - a.score)
             .slice(0, limit);
 
-        // Search Wisdom Codex
-        const wisdomLines = wisdom ? wisdom.split('\n').filter((l) => l.startsWith('- [')) : [];
-        const matchedWisdom = wisdomLines
+        // Search Wisdom Codex using shared parser
+        const wisdomEntries = parseWisdomEntries(wisdom);
+        const matchedWisdom = wisdomEntries
             .filter((entry) => {
                 const entryLower = entry.toLowerCase();
                 return keywords.some((kw) => entryLower.includes(kw));

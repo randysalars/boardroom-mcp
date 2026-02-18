@@ -1,63 +1,23 @@
 /**
  * governance tool — Task classification + advisor routing.
+ *
+ * Uses the shared classifyTask and classifySeverity from utils.ts
+ * to ensure consistent routing with the analyze tool.
  */
 
-import { mcpSuccess, mcpError } from '../utils.js';
-
-const SEVERITY_KEYWORDS: Record<string, string[]> = {
-    critical: ['irreversible', 'delete', 'payment', 'security', 'breach', 'fire', 'legal'],
-    standard: ['strategy', 'architecture', 'roadmap', 'partnership', 'pricing'],
-    routine: ['bug', 'style', 'refactor', 'docs', 'config'],
-};
-
-const COUNCIL_ROUTING: Record<string, { councils: string[]; reason: string }> = {
-    technology: { councils: ['Technology'], reason: 'Technical decision' },
-    strategy: { councils: ['Keystone', 'Business'], reason: 'Strategic decision' },
-    marketing: { councils: ['Marketing', 'E-commerce'], reason: 'Marketing & growth' },
-    product: { councils: ['Business', 'E-commerce'], reason: 'Product decision' },
-    crisis: { councils: ['Keystone', 'Business', 'Technology'], reason: 'Crisis response' },
-    ethics: { councils: ['Keystone', 'Singularity'], reason: 'Ethics & values' },
-    operations: { councils: ['Business', 'E-commerce'], reason: 'Operations & workflow' },
-    general: { councils: ['Keystone', 'Business'], reason: 'General decision' },
-};
-
-function classifySeverity(task: string): string {
-    const lower = task.toLowerCase();
-    for (const [severity, keywords] of Object.entries(SEVERITY_KEYWORDS)) {
-        if (keywords.some((k) => lower.includes(k))) return severity;
-    }
-    return 'routine';
-}
-
-function routeToCouncils(task: string): { councils: string[]; reason: string } {
-    const lower = task.toLowerCase();
-
-    // Score-based routing — same pattern as analyze.ts
-    const rules: [string, string[]][] = [
-        ['crisis', ['crisis', 'emergency', 'outage', 'breach', 'incident']],
-        ['technology', ['code', 'api', 'server', 'deploy', 'database', 'debug', 'architecture', 'refactor']],
-        ['strategy', ['strategy', 'revenue', 'compete', 'roadmap', 'invest', 'moat', 'pivot']],
-        ['marketing', ['marketing', 'seo', 'content strategy', 'ads', 'growth', 'social media', 'campaign']],
-        ['product', ['product', 'feature', 'ux', 'design', 'pricing', 'launch', 'onboarding']],
-        ['ethics', ['ethics', 'values', 'moral', 'trust', 'privacy']],
-        ['operations', ['process', 'workflow', 'automate', 'optimize', 'pipeline', 'cron']],
-    ];
-
-    const scores: Record<string, number> = {};
-    for (const [type, keywords] of rules) {
-        const score = keywords.filter((kw) => lower.includes(kw)).length;
-        if (score > 0) scores[type] = score;
-    }
-
-    const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]);
-    const best = sorted[0]?.[0] || 'general';
-    return COUNCIL_ROUTING[best] || COUNCIL_ROUTING.general;
-}
+import {
+    classifyTask,
+    classifySeverity,
+    COUNCIL_ROUTING,
+    mcpSuccess,
+    mcpError,
+} from '../utils.js';
 
 export async function checkGovernanceTool(task: string) {
     try {
         const severity = classifySeverity(task);
-        const routing = routeToCouncils(task);
+        const classification = classifyTask(task);
+        const routing = COUNCIL_ROUTING[classification.type] || COUNCIL_ROUTING.general;
 
         const severityEmoji = severity === 'critical' ? '🔴' : severity === 'standard' ? '🟡' : '🟢';
 
@@ -65,6 +25,8 @@ export async function checkGovernanceTool(task: string) {
             `# Governance Check`,
             ``,
             `**Task:** ${task}`,
+            `**Classification:** ${classification.type.toUpperCase()}`,
+            `**Matched Keywords:** ${classification.keywords.join(', ') || 'none'}`,
             `**Severity:** ${severityEmoji} ${severity.toUpperCase()}`,
             `**Councils:** ${routing.councils.join(', ')}`,
             `**Routing Reason:** ${routing.reason}`,

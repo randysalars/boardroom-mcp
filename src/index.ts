@@ -66,13 +66,13 @@ server.tool(
         entity: z.string().describe('The entity to look up — an agent name, tool, vendor, or platform'),
         context: z.string().optional().describe('Optional context about how you are using this entity'),
     },
-    async ({ entity }) => trustLookupTool(entity),
+    async ({ entity, context }) => trustLookupTool(entity, context),
 );
 
 // ── Tool 5: report_outcome ───────────────────────────────────────
 server.tool(
     'report_outcome',
-    'Report the outcome of a decision for the Boardroom learning system. Records what happened, whether the original recommendation was followed, and what was learned. Feeds the Knowledge Flywheel. Returns a warning if the outcome could not be persisted to disk.',
+    'Report the outcome of a decision for the Boardroom learning system. Records what happened, whether the original recommendation was followed, and what was learned. Feeds the Knowledge Flywheel and updates the Trust Oracle if an entity is specified. Returns a warning if the outcome could not be persisted to disk.',
     {
         task: z.string().describe('The original task or decision'),
         outcome: z.string().describe('What actually happened — result, success/failure, learnings'),
@@ -81,9 +81,13 @@ server.tool(
             .optional()
             .default(true)
             .describe('Whether the Boardroom recommendation was followed'),
+        entity: z
+            .string()
+            .optional()
+            .describe('Optional entity (agent, tool, vendor) whose trust profile should be updated based on this outcome'),
     },
-    async ({ task, outcome, followedRecommendation }) =>
-        reportOutcomeTool(task, outcome, followedRecommendation),
+    async ({ task, outcome, followedRecommendation, entity }) =>
+        reportOutcomeTool(task, outcome, followedRecommendation, entity),
 );
 
 // ── Start Server ─────────────────────────────────────────────────

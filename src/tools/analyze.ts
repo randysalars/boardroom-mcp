@@ -12,64 +12,15 @@ import {
     DEMO_ROOT,
     LEDGER_PATH,
     WISDOM_PATH,
+    ROUTING_TABLE,
     safeReadFile,
     hasProtocolFiles,
+    classifyTask,
+    extractKeywords,
+    parseWisdomEntries,
     mcpSuccess,
     mcpError,
 } from '../utils.js';
-
-// Map decision types to council categories (normalized to lowercase)
-const ROUTING_TABLE: Record<string, string[]> = {
-    strategy: ['keystone', 'business'],
-    marketing: ['marketing', 'ecommerce'],
-    product: ['business', 'ecommerce'],
-    technology: ['technology'],
-    operations: ['business', 'ecommerce'],
-    crisis: ['keystone', 'business', 'technology'],
-    singularity: ['singularity'],
-    ethics: ['keystone', 'singularity'],
-    general: ['keystone', 'business'],
-};
-
-// Classification rules: [type, keywords, weight-per-keyword]
-const CLASSIFICATION_RULES: [string, string[]][] = [
-    ['singularity', ['omega', 'singularity', 'agi', 'superintelligence', 'consciousness']],
-    ['technology', ['code', 'debug', 'algorithm', 'deploy', 'server', 'api', 'database', 'mcp', 'architecture', 'refactor', 'test', 'ci']],
-    ['marketing', ['marketing', 'seo', 'content strategy', 'social media', 'brand', 'audience', 'ads', 'growth', 'campaign', 'funnel']],
-    ['product', ['product', 'feature', 'ux', 'design', 'pricing', 'tier', 'launch', 'onboarding', 'user experience']],
-    ['crisis', ['crisis', 'emergency', 'breach', 'outage', 'critical', 'urgent', 'incident']],
-    ['strategy', ['strategy', 'revenue', 'monetize', 'compete', 'pivot', 'invest', 'roadmap', 'moat', 'acquisition']],
-    ['operations', ['process', 'workflow', 'automate', 'optimize', 'pipeline', 'cron', 'devops']],
-    ['ethics', ['ethics', 'values', 'moral', 'trust', 'privacy', 'fairness']],
-];
-
-/**
- * Score-based classification — matches ALL rules and returns the highest-scoring type.
- * Fixes the order-dependent first-match bug.
- */
-function classifyTask(task: string): { type: string; keywords: string[] } {
-    const lower = task.toLowerCase();
-    const scores: Record<string, number> = {};
-    const allMatched: string[] = [];
-
-    for (const [type, keywords] of CLASSIFICATION_RULES) {
-        let score = 0;
-        for (const kw of keywords) {
-            if (lower.includes(kw)) {
-                score++;
-                allMatched.push(kw);
-            }
-        }
-        if (score > 0) {
-            scores[type] = (scores[type] || 0) + score;
-        }
-    }
-
-    // Sort by score descending, pick the best
-    const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]);
-    const primary = sorted[0]?.[0] || 'general';
-    return { type: primary, keywords: allMatched };
-}
 
 /**
  * Parse advisor entries from a seats.md file.
@@ -168,8 +119,8 @@ async function findPrecedents(query: string, limit: number = 5): Promise<string[
     const ledger = await safeReadFile(LEDGER_PATH);
     if (!ledger) return [];
 
-    const lower = query.toLowerCase();
-    const keywords = lower.split(/\s+/).filter((w) => w.length > 3);
+    const { keywords } = extractKeywords(query);
+    if (keywords.length === 0) return [];
 
     const sessions = ledger.split(/^## /m).slice(1);
     const scored = sessions
@@ -190,19 +141,16 @@ async function findPrecedents(query: string, limit: number = 5): Promise<string[
 }
 
 /**
- * Search Wisdom Codex — flexible format matching.
- * Matches entries starting with `- [`, `- *`, `> `, or any `- ` bullet.
+ * Search Wisdom Codex using shared parser.
  */
 async function findWisdom(query: string, limit: number = 5): Promise<string[]> {
     const wisdom = await safeReadFile(WISDOM_PATH);
     if (!wisdom) return [];
 
-    const lower = query.toLowerCase();
-    const keywords = lower.split(/\s+/).filter((w) => w.length > 3);
+    const { keywords } = extractKeywords(query);
+    if (keywords.length === 0) return [];
 
-    const entries = wisdom.split('\n').filter((l) =>
-        l.startsWith('- [') || l.startsWith('- *') || l.startsWith('> ') || (l.startsWith('- ') && l.length > 10),
-    );
+    const entries = parseWisdomEntries(wisdom);
     return entries
         .filter((entry) => {
             const entryLower = entry.toLowerCase();
@@ -225,10 +173,8 @@ export async function analyzeTool(task: string) {
         // Deduplicate advisors and collect their details
         const seenAdvisors = new Set<string>();
         const advisorSections: string[] = [];
-        let allSeatContent = '';
 
         for (const result of seatResults) {
-            allSeatContent += result.content + '\n';
             for (const advisor of result.advisors) {
                 if (!seenAdvisors.has(advisor)) {
                     seenAdvisors.add(advisor);

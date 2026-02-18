@@ -1,15 +1,19 @@
 /**
  * report tool — Log decision outcomes for the learning system.
+ *
+ * Now also updates the Trust Oracle when an entity is mentioned,
+ * closing the feedback loop between report_outcome → trust_lookup.
  */
 
 import fs from 'fs/promises';
 import path from 'path';
-import { LEDGER_PATH, now, mcpSuccess, mcpError } from '../utils.js';
+import { LEDGER_PATH, now, updateTrustOracle, mcpSuccess, mcpError } from '../utils.js';
 
 export async function reportOutcomeTool(
     task: string,
     outcome: string,
     followedRecommendation: boolean = true,
+    entity?: string,
 ) {
     try {
         const timestamp = now();
@@ -22,6 +26,7 @@ export async function reportOutcomeTool(
             `**Task:** ${task}`,
             `**Outcome:** ${outcome}`,
             `**Followed Recommendation:** ${followedRecommendation ? 'Yes' : 'No'}`,
+            ...(entity ? [`**Entity:** ${entity}`] : []),
             `**Timestamp:** ${timestamp}`,
             ``,
             `---`,
@@ -39,6 +44,19 @@ export async function reportOutcomeTool(
             writeError = err instanceof Error ? err.message : String(err);
         }
 
+        // Update Trust Oracle if an entity was specified
+        let trustUpdated = false;
+        let trustError = '';
+        if (entity) {
+            // Infer success: positive outcomes when recommendation was followed,
+            // or explicitly positive language in the outcome.
+            const outcomePositive = followedRecommendation &&
+                !outcome.toLowerCase().match(/\b(fail|broke|error|crash|wrong|bad|lost)\b/);
+            const trustResult = await updateTrustOracle(entity, outcomePositive);
+            trustUpdated = trustResult.updated;
+            trustError = trustResult.error || '';
+        }
+
         const result = [
             `# Outcome Recorded`,
             ``,
@@ -51,6 +69,13 @@ export async function reportOutcomeTool(
             `**Followed Recommendation:** ${followedRecommendation ? 'Yes' : 'No'}`,
             `**Logged At:** ${timestamp}`,
             `**Persisted:** ${persisted ? 'Yes ✅' : 'No ⚠️'}`,
+            ...(entity ? [
+                ``,
+                `## Trust Oracle Update`,
+                trustUpdated
+                    ? `✅ Trust profile for **${entity}** has been updated. Use \`trust_lookup("${entity}")\` to see the current profile.`
+                    : `⚠️ Trust profile for **${entity}** could not be updated${trustError ? ` (${trustError})` : ''}.`,
+            ] : []),
             ``,
             persisted
                 ? `This outcome will be used to improve future Boardroom recommendations.`

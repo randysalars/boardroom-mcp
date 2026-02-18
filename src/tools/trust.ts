@@ -1,23 +1,18 @@
 /**
  * trust tool — 6-dimension trust vector for any entity.
+ *
+ * Uses shared TrustProfile/TrustOracle types from utils.ts.
  */
 
-import { TRUST_ORACLE_PATH, safeReadFile, safeParseJSON, mcpSuccess, mcpError } from '../utils.js';
-
-interface TrustProfile {
-    reliability: number;
-    honesty: number;
-    followThrough: number;
-    outcomeQuality: number;
-    stability: number;
-    riskProfile: number;
-    interactions: number;
-    lastUpdated: string;
-}
-
-interface TrustOracle {
-    agents: Record<string, TrustProfile>;
-}
+import {
+    TRUST_ORACLE_PATH,
+    safeReadFile,
+    safeParseJSON,
+    mcpSuccess,
+    mcpError,
+    TrustProfile,
+    TrustOracle,
+} from '../utils.js';
 
 function getRecommendation(composite: number): string {
     if (composite >= 0.85) return '✅ TRUST — High confidence, minimal oversight needed';
@@ -26,7 +21,7 @@ function getRecommendation(composite: number): string {
     return '🚫 AVOID — Insufficient trust, do not delegate critical tasks';
 }
 
-export async function trustLookupTool(entity: string) {
+export async function trustLookupTool(entity: string, context?: string) {
     try {
         const content = await safeReadFile(TRUST_ORACLE_PATH);
         const oracle = content ? safeParseJSON<TrustOracle>(content) : null;
@@ -38,6 +33,7 @@ export async function trustLookupTool(entity: string) {
                 `# Trust Lookup: ${entity}`,
                 ``,
                 `**Status:** ❓ Unknown Entity`,
+                ...(context ? [`**Context:** ${context}`] : []),
                 ``,
                 `No trust profile found for "${entity}".`,
                 ``,
@@ -74,6 +70,7 @@ export async function trustLookupTool(entity: string) {
         const result = [
             `# Trust Lookup: ${entity}`,
             ``,
+            ...(context ? [`**Context:** ${context}`, ``] : []),
             `## 6-Dimension Trust Vector`,
             `| Dimension | Score | Weight |`,
             `|-----------|-------|--------|`,
