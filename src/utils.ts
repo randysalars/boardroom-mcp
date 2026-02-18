@@ -114,6 +114,33 @@ export function now(): string {
     return new Date().toISOString();
 }
 
+// ── Input Validation ─────────────────────────────────────────────
+
+/** Maximum allowed length for user-provided input strings. */
+const MAX_INPUT_LENGTH = 10_000;
+
+/**
+ * Validate and sanitize user input.
+ *
+ * Enforces a maximum length to prevent memory/compute abuse and strips
+ * null bytes to prevent path traversal attacks.
+ *
+ * @param input - Raw user input string.
+ * @param fieldName - Name of the field (for error messages).
+ * @returns Sanitized string.
+ * @throws Error if the input exceeds the maximum length.
+ */
+export function validateInput(input: string, fieldName: string = 'input'): string {
+    if (input.length > MAX_INPUT_LENGTH) {
+        throw new Error(
+            `${fieldName} exceeds maximum length (${MAX_INPUT_LENGTH} characters). ` +
+            `Received ${input.length} characters.`,
+        );
+    }
+    // Strip null bytes — prevents path traversal via embedded \0
+    return input.replace(/\0/g, '');
+}
+
 // ── Protocol File Detection ──────────────────────────────────────
 
 /**

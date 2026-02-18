@@ -16,6 +16,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
+import { validateInput } from './utils.js';
 import { analyzeTool } from './tools/analyze.js';
 import { checkGovernanceTool } from './tools/governance.js';
 import { queryIntelligenceTool } from './tools/intelligence.js';
@@ -24,7 +25,7 @@ import { reportOutcomeTool } from './tools/report.js';
 
 const server = new McpServer({
     name: 'boardroom-mcp',
-    version: '0.2.0',
+    version: '0.2.1',
 });
 
 // ── Tool 1: analyze ──────────────────────────────────────────────
@@ -34,7 +35,7 @@ server.tool(
     {
         task: z.string().describe('The decision, question, or task to analyze'),
     },
-    async ({ task }) => analyzeTool(task),
+    async ({ task }) => analyzeTool(validateInput(task, 'task')),
 );
 
 // ── Tool 2: check_governance ─────────────────────────────────────
@@ -44,7 +45,7 @@ server.tool(
     {
         task: z.string().describe('The task or decision to classify'),
     },
-    async ({ task }) => checkGovernanceTool(task),
+    async ({ task }) => checkGovernanceTool(validateInput(task, 'task')),
 );
 
 // ── Tool 3: query_intelligence ───────────────────────────────────
@@ -55,7 +56,7 @@ server.tool(
         query: z.string().describe('The search query — topic, keyword, or question'),
         limit: z.number().optional().default(10).describe('Max results to return'),
     },
-    async ({ query, limit }) => queryIntelligenceTool(query, limit),
+    async ({ query, limit }) => queryIntelligenceTool(validateInput(query, 'query'), limit),
 );
 
 // ── Tool 4: trust_lookup ─────────────────────────────────────────
@@ -66,7 +67,10 @@ server.tool(
         entity: z.string().describe('The entity to look up — an agent name, tool, vendor, or platform'),
         context: z.string().optional().describe('Optional context about how you are using this entity'),
     },
-    async ({ entity, context }) => trustLookupTool(entity, context),
+    async ({ entity, context }) => trustLookupTool(
+        validateInput(entity, 'entity'),
+        context ? validateInput(context, 'context') : undefined,
+    ),
 );
 
 // ── Tool 5: report_outcome ───────────────────────────────────────
@@ -87,7 +91,12 @@ server.tool(
             .describe('Optional entity (agent, tool, vendor) whose trust profile should be updated based on this outcome'),
     },
     async ({ task, outcome, followedRecommendation, entity }) =>
-        reportOutcomeTool(task, outcome, followedRecommendation, entity),
+        reportOutcomeTool(
+            validateInput(task, 'task'),
+            validateInput(outcome, 'outcome'),
+            followedRecommendation,
+            entity ? validateInput(entity, 'entity') : undefined,
+        ),
 );
 
 // ── Start Server ─────────────────────────────────────────────────
