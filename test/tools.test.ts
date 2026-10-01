@@ -1,5 +1,10 @@
+// Isolation must come first: src modules resolve their data paths from env
+// at import time, and static imports evaluate in declaration order.
+import './helpers/env.js';
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+import path from 'node:path';
 
 // Test the tool modules directly
 import { analyzeTool } from '../src/tools/analyze.js';
@@ -7,6 +12,23 @@ import { checkGovernanceTool } from '../src/tools/governance.js';
 import { queryIntelligenceTool } from '../src/tools/intelligence.js';
 import { trustLookupTool } from '../src/tools/trust.js';
 import { reportOutcomeTool } from '../src/tools/report.js';
+import { LEDGER_PATH } from '../src/utils.js';
+
+/** Write `count` vendor-keyword sessions to the (isolated) LEDGER. */
+async function seedLedgerWithSessions(count: number): Promise<void> {
+    let ledger = '';
+    for (let i = 0; i < count; i += 1) {
+        ledger += `\n\n## Vendor Session ${String(i).padStart(3, '0')}\n**Task:** evaluate vendor ${i}\n**Outcome:** approved\n---`;
+    }
+    await fs.mkdir(path.dirname(LEDGER_PATH), { recursive: true });
+    await fs.writeFile(LEDGER_PATH, ledger, 'utf-8');
+}
+
+/** Read the LEDGER match count out of the result header. */
+function ledgerMatchCount(text: string): number {
+    const section = text.split('## LEDGER Matches (')[1]?.split(')')[0] ?? '0';
+    return Number(section);
+}
 
 /**
  * Basic smoke tests for each of the 5 MCP tools.
@@ -48,6 +70,26 @@ describe('query_intelligence tool', () => {
         const text = result.content[0].text;
         assert.ok(typeof text === 'string' && text.length > 0, 'text should be non-empty');
         assert.ok(text.includes('Intelligence'), 'should contain Intelligence header');
+    });
+
+    it('defaults to 10 results per source when the limit is omitted', async () => {
+        await seedLedgerWithSessions(15);
+        const result = await queryIntelligenceTool('vendor');
+        assert.strictEqual(ledgerMatchCount(result.content[0].text), 10);
+    });
+
+    it('clamps oversized limits from direct callers to 50', async () => {
+        await seedLedgerWithSessions(60);
+        const result = await queryIntelligenceTool('vendor', 60);
+        assert.strictEqual(ledgerMatchCount(result.content[0].text), 50);
+    });
+
+    it('clamps invalid limits to at least one result', async () => {
+        await seedLedgerWithSessions(5);
+        for (const bad of [0, -5, 1.9]) {
+            const result = await queryIntelligenceTool('vendor', bad);
+            assert.strictEqual(ledgerMatchCount(result.content[0].text), 1, `limit ${bad} must yield one result`);
+        }
     });
 });
 

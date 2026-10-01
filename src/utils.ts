@@ -141,6 +141,22 @@ export function validateInput(input: string, fieldName: string = 'input'): strin
     return input.replace(/\0/g, '');
 }
 
+/**
+ * Neutralize markdown headings in user-supplied text before it is written
+ * to the LEDGER.
+ *
+ * Ledger sessions are delimited by lines starting with `## `, so a heading
+ * inside user text would forge a fake session that `query_intelligence`
+ * later serves as a precedent. Escaping the first `#` of every line keeps
+ * the text readable while making headings at any level impossible.
+ *
+ * @param text - Raw user-supplied text destined for the LEDGER.
+ * @returns Text in which no line starts with `#`.
+ */
+export function sanitizeForLedger(text: string): string {
+    return text.replace(/^#/gm, '\\#');
+}
+
 // ── Protocol File Detection ──────────────────────────────────────
 
 /**
@@ -311,6 +327,23 @@ function clamp01(value: number): number {
     return Math.max(0, Math.min(1, value));
 }
 
+/** Entity names that are own properties of Object.prototype (e.g. `__proto__`, `constructor`, `toString`). */
+const UNSAFE_ENTITY_KEYS = new Set(Object.getOwnPropertyNames(Object.prototype));
+
+/** Completed trust-oracle operations, chained so the next one waits its turn. */
+let trustOracleQueue: Promise<unknown> = Promise.resolve();
+
+/**
+ * Run `fn` only after every previously queued trust-oracle operation has
+ * finished. Trust-oracle updates are read-modify-write cycles, so
+ * concurrent tool calls would otherwise lose each other's changes.
+ */
+function withTrustOracleLock<T>(fn: () => Promise<T>): Promise<T> {
+    const result = trustOracleQueue.then(fn, fn);
+    trustOracleQueue = result.catch(() => {});
+    return result;
+}
+
 /**
  * Update (or create) a trust profile for an entity based on an outcome report.
  *
@@ -328,38 +361,47 @@ export async function updateTrustOracle(
 ): Promise<TrustUpdateResult> {
     if (!entity) return { updated: false, error: 'No entity provided' };
 
-    try {
-        const content = await safeReadFile(TRUST_ORACLE_PATH);
-        const oracle: TrustOracle = content
-            ? (safeParseJSON<TrustOracle>(content) || { agents: {} })
-            : { agents: {} };
-
-        const existing = oracle.agents[entity];
-        const delta = success ? TRUST_DELTA_SUCCESS : TRUST_DELTA_FAILURE;
-
-        if (existing) {
-            existing.reliability = clamp01(existing.reliability + TRUST_EMA_ALPHA * delta);
-            existing.outcomeQuality = clamp01(existing.outcomeQuality + TRUST_EMA_ALPHA * delta);
-            existing.followThrough = clamp01(existing.followThrough + TRUST_EMA_ALPHA * (success ? 0.05 : -0.1));
-            existing.interactions += 1;
-            existing.lastUpdated = now();
-        } else {
-            oracle.agents[entity] = {
-                reliability: 0.5 + delta,
-                honesty: 0.5,
-                followThrough: 0.5 + (success ? 0.05 : -0.1),
-                outcomeQuality: 0.5 + delta,
-                stability: 0.5,
-                riskProfile: 0.5,
-                interactions: 1,
-                lastUpdated: now(),
-            };
-        }
-
-        await fs.mkdir(path.dirname(TRUST_ORACLE_PATH), { recursive: true });
-        await fs.writeFile(TRUST_ORACLE_PATH, JSON.stringify(oracle, null, 2), 'utf-8');
-        return { updated: true };
-    } catch (err) {
-        return { updated: false, error: err instanceof Error ? err.message : String(err) };
+    // Names like `__proto__` mutate the prototype instead of writing a key,
+    // and `constructor`/`toString` read back as inherited members — refuse
+    // them so an entity can never silently vanish or corrupt lookups.
+    if (UNSAFE_ENTITY_KEYS.has(entity)) {
+        return { updated: false, error: `Entity name "${entity}" is not allowed` };
     }
+
+    return withTrustOracleLock(async () => {
+        try {
+            const content = await safeReadFile(TRUST_ORACLE_PATH);
+            const oracle: TrustOracle = content
+                ? (safeParseJSON<TrustOracle>(content) || { agents: {} })
+                : { agents: {} };
+
+            const existing = oracle.agents[entity];
+            const delta = success ? TRUST_DELTA_SUCCESS : TRUST_DELTA_FAILURE;
+
+            if (existing) {
+                existing.reliability = clamp01(existing.reliability + TRUST_EMA_ALPHA * delta);
+                existing.outcomeQuality = clamp01(existing.outcomeQuality + TRUST_EMA_ALPHA * delta);
+                existing.followThrough = clamp01(existing.followThrough + TRUST_EMA_ALPHA * (success ? 0.05 : -0.1));
+                existing.interactions += 1;
+                existing.lastUpdated = now();
+            } else {
+                oracle.agents[entity] = {
+                    reliability: 0.5 + delta,
+                    honesty: 0.5,
+                    followThrough: 0.5 + (success ? 0.05 : -0.1),
+                    outcomeQuality: 0.5 + delta,
+                    stability: 0.5,
+                    riskProfile: 0.5,
+                    interactions: 1,
+                    lastUpdated: now(),
+                };
+            }
+
+            await fs.mkdir(path.dirname(TRUST_ORACLE_PATH), { recursive: true });
+            await fs.writeFile(TRUST_ORACLE_PATH, JSON.stringify(oracle, null, 2), 'utf-8');
+            return { updated: true };
+        } catch (err) {
+            return { updated: false, error: err instanceof Error ? err.message : String(err) };
+        }
+    });
 }

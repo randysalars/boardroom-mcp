@@ -62,7 +62,9 @@ export async function trustLookupTool(entity: string, context?: string): Promise
         const content = await safeReadFile(TRUST_ORACLE_PATH);
         const oracle = content ? safeParseJSON<TrustOracle>(content) : null;
 
-        if (!oracle || !oracle.agents || !oracle.agents[entity]) {
+        // Own-property check — inherited members like `constructor` must not
+        // resolve to a trust profile.
+        if (!oracle || !oracle.agents || !Object.hasOwn(oracle.agents, entity)) {
             const hasOracleFile = !!content;
 
             const result = [

@@ -17,6 +17,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
 import { validateInput } from './utils.js';
+import { limitSchema } from './schemas.js';
 import { analyzeTool } from './tools/analyze.js';
 import { checkGovernanceTool } from './tools/governance.js';
 import { queryIntelligenceTool } from './tools/intelligence.js';
@@ -25,7 +26,7 @@ import { reportOutcomeTool } from './tools/report.js';
 
 const server = new McpServer({
     name: 'boardroom-mcp',
-    version: '0.2.1',
+    version: '0.2.2',
 });
 
 // ── Tool 1: analyze ──────────────────────────────────────────────
@@ -54,7 +55,7 @@ server.tool(
     'Search the Boardroom LEDGER (persistent decision memory) and Wisdom Codex for relevant precedents, past decisions, and distilled insights. Returns keyword-matched results with timestamps and excerpts. The LEDGER grows each time you use report_outcome.',
     {
         query: z.string().describe('The search query — topic, keyword, or question'),
-        limit: z.number().optional().default(10).describe('Max results to return'),
+        limit: limitSchema,
     },
     async ({ query, limit }) => queryIntelligenceTool(validateInput(query, 'query'), limit),
 );

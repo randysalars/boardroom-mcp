@@ -21,15 +21,38 @@ import type { McpToolResponse } from '../types.js';
 /** Maximum excerpt length for LEDGER session previews. */
 const SESSION_EXCERPT_LENGTH = 400;
 
+/** Default number of results per source when no limit is provided. */
+const DEFAULT_LIMIT = 10;
+
+/** Upper bound for result limits from any caller (mirrors the MCP schema cap). */
+const MAX_LIMIT = 50;
+
+/**
+ * Coerce a raw limit into a safe positive integer.
+ *
+ * Defense in depth: the MCP schema already validates this parameter,
+ * but direct callers of {@link queryIntelligenceTool} bypass that schema.
+ *
+ * @param limit - Raw limit from the caller (may be undefined or invalid).
+ * @returns A positive integer clamped to [1, {@link MAX_LIMIT}].
+ */
+function normalizeLimit(limit: number | undefined): number {
+    const parsed = Math.floor(Number(limit));
+    if (!Number.isFinite(parsed)) return DEFAULT_LIMIT;
+    return Math.min(Math.max(parsed, 1), MAX_LIMIT);
+}
+
 /**
  * Search institutional memory for relevant precedents and wisdom.
  *
  * @param query - Search query — topic, keyword, or question.
- * @param limit - Maximum number of results per source (default: 10).
+ * @param limit - Maximum number of results per source (1–50, default: 10).
  * @returns MCP response with matched LEDGER sessions and Wisdom entries.
  */
-export async function queryIntelligenceTool(query: string, limit: number = 10): Promise<McpToolResponse> {
+export async function queryIntelligenceTool(query: string, limit: number = DEFAULT_LIMIT): Promise<McpToolResponse> {
     try {
+        const resultLimit = normalizeLimit(limit);
+
         const [ledger, wisdom] = await Promise.all([
             safeReadFile(LEDGER_PATH),
             safeReadFile(WISDOM_PATH),
@@ -64,7 +87,7 @@ export async function queryIntelligenceTool(query: string, limit: number = 10): 
             })
             .filter((s) => s.score > 0)
             .sort((a, b) => b.score - a.score)
-            .slice(0, limit);
+            .slice(0, resultLimit);
 
         // Search Wisdom Codex using shared parser
         const wisdomEntries = parseWisdomEntries(wisdom);
@@ -73,7 +96,7 @@ export async function queryIntelligenceTool(query: string, limit: number = 10): 
                 const entryLower = entry.toLowerCase();
                 return keywords.some((kw) => entryLower.includes(kw));
             })
-            .slice(0, limit);
+            .slice(0, resultLimit);
 
         const result = [
             `# Intelligence Query Results`,
