@@ -110,7 +110,7 @@ async function loadCouncilSeats(council: string, hasFull: boolean): Promise<Coun
 /** Maximum number of LEDGER precedent excerpts per query. */
 const PRECEDENT_EXCERPT_LENGTH = 300;
 
-/** Maximum number of advisor sections displayed in an analysis. */
+/** Maximum number of advisors named in the Advisors Available line. */
 const MAX_DISPLAYED_ADVISORS = 8;
 
 /** Search the LEDGER for precedents. */
@@ -188,10 +188,13 @@ export async function analyzeTool(task: string): Promise<McpToolResponse> {
             }
         }
 
-        // Cap the displayed advisors before building sections so oversized
-        // councils don't pay for sections that are never shown.
-        const advisors = [...seenAdvisors].slice(0, MAX_DISPLAYED_ADVISORS);
-        const advisorSections = advisors.map((advisor) => {
+        // Every unique advisor gets a perspective section — only the
+        // Advisors Available line is display-capped (pre-existing behavior;
+        // an audit fix must not change tool output). Sections and tensions
+        // intentionally draw from the same uncapped advisor set.
+        const allAdvisors = [...seenAdvisors];
+        const advisors = allAdvisors.slice(0, MAX_DISPLAYED_ADVISORS);
+        const advisorSections = allAdvisors.map((advisor) => {
             const details = detailsByAdvisor.get(advisor);
             if (!details) return `### ${advisor}`;
             return [
@@ -217,14 +220,13 @@ export async function analyzeTool(task: string): Promise<McpToolResponse> {
             systemExcerpt = systemPrompt.substring(0, 500);
         }
 
-        // Build dynamic tension from advisor seat cards
+        // Build dynamic tension from advisor seat cards — the same
+        // deduplicated advisor set as the sections above, one line each.
         const tensions: string[] = [];
-        for (const result of seatResults) {
-            for (const advisor of result.advisors) {
-                const details = detailsByAdvisor.get(advisor);
-                if (details?.tensionArea) {
-                    tensions.push(`- **${advisor}:** ${details.tensionArea}`);
-                }
+        for (const advisor of allAdvisors) {
+            const details = detailsByAdvisor.get(advisor);
+            if (details?.tensionArea) {
+                tensions.push(`- **${advisor}:** ${details.tensionArea}`);
             }
         }
 

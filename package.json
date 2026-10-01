@@ -11,7 +11,7 @@
         "build": "tsc",
         "dev": "tsx src/index.ts",
         "start": "node dist/index.js",
-        "test": "node --import tsx --test test/*.test.ts",
+        "test": "node --import tsx --import ./test/helpers/env.ts --test test/*.test.ts",
         "typecheck": "tsc --noEmit",
         "prepublishOnly": "npm run build"
     },

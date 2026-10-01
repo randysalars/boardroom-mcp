@@ -14,7 +14,8 @@ const CRISIS_TASK = 'Crisis: security breach in the payment pipeline, must respo
 /**
  * Seed full-protocol fixtures: SYSTEM_PROMPT.md plus seats/ files so
  * hasProtocolFiles() engages full mode. Two councils with 13 unique
- * advisors in proper seat-card format — well above the 8-advisor cap.
+ * advisors in proper seat-card format — well above the 8-advisor
+ * display cap on the Advisors Available line.
  */
 async function seedFullModeCouncils(): Promise<void> {
     await fs.mkdir(path.join(MASTERMIND_ROOT, 'seats'), { recursive: true });
@@ -48,8 +49,15 @@ async function seedFullModeCouncils(): Promise<void> {
     );
 }
 
-describe('analyze advisor cap (audit finding 7)', () => {
-    it('builds sections for at most 8 advisors even with 13 available', async () => {
+/** Split the Mandatory Tension Framework advisor list out of an analysis. */
+function tensionAdvisorBlock(text: string): string {
+    return text
+        .split('**Advisor tension areas for this analysis:**')[1]
+        ?.split('## Next Steps')[0] ?? '';
+}
+
+describe('analyze advisor sections (audit finding 7)', () => {
+    it('gives every unique advisor a section and a tension line — sections and tensions stay on the same set', async () => {
         await seedFullModeCouncils();
 
         const result = await analyzeTool(CRISIS_TASK);
@@ -61,15 +69,36 @@ describe('analyze advisor cap (audit finding 7)', () => {
             ?.split('## Relevant Precedents')[0] ?? '';
         const heads = perspectives.match(/^### .+$/gm) ?? [];
 
-        // 6 keystone + 7 business advisors, capped to 8 in first-seen order.
-        assert.strictEqual(heads.length, 8, `expected 8 advisor sections, got ${heads.length}`);
-        for (const beyond of ['Business Advisor 03', 'Business Advisor 04', 'Business Advisor 05', 'Business Advisor 06', 'Business Advisor 07']) {
-            assert.ok(!perspectives.includes(`### ${beyond}`), `${beyond} must have no section beyond the cap`);
+        // 6 keystone + 7 business advisors — every unique advisor gets a section.
+        assert.strictEqual(heads.length, 13, `expected 13 advisor sections, got ${heads.length}`);
+        assert.ok(perspectives.includes('### Business Advisor 03'), 'advisors beyond the name cap must still get sections');
+
+        const tensionBlock = tensionAdvisorBlock(text);
+        const tensionNames = Array.from(tensionBlock.matchAll(/^- \*\*(.+?):\*\*/gm), (m) => m[1]);
+        assert.strictEqual(tensionNames.length, 13, `expected 13 tension lines, got ${tensionNames.length}`);
+
+        // Consistency: every tension advisor also has a section.
+        const sectionNames = new Set(heads.map((h) => h.replace(/^### /, '')));
+        for (const name of tensionNames) {
+            assert.ok(sectionNames.has(name), `tension advisor "${name}" must have a section`);
         }
-        assert.ok(!text.split('## Advisor Perspectives')[0].includes('Business Advisor 03'), 'Advisors Available must also be capped');
     });
 
-    it('extracts each capped advisor exactly once with parsed details', async () => {
+    it('caps only the Advisors Available name list at 8', async () => {
+        await seedFullModeCouncils();
+
+        const result = await analyzeTool(CRISIS_TASK);
+        const header = result.content[0].text
+            .split('**Advisors Available:**')[1]
+            ?.split('\n')[0] ?? '';
+
+        const named = header.trim().split(', ');
+        assert.strictEqual(named.length, 8, `expected 8 named advisors, got ${named.length}`);
+        assert.strictEqual(named[0], 'Keystone Advisor 01', 'first-seen advisors are named first');
+        assert.ok(!header.includes('Business Advisor 03'), 'advisors beyond the cap are not named');
+    });
+
+    it('extracts each advisor exactly once with parsed details', async () => {
         await seedFullModeCouncils();
 
         const result = await analyzeTool(CRISIS_TASK);
@@ -80,7 +109,7 @@ describe('analyze advisor cap (audit finding 7)', () => {
         assert.strictEqual((perspectives.match(/### Keystone Advisor 01/g) ?? []).length, 1);
         assert.ok(
             perspectives.includes('- **Philosophy:** Keystone Advisor 01 weighs long-term value over short-term noise.'),
-            'capped advisors must carry their parsed seat-card details',
+            'advisors must carry their parsed seat-card details',
         );
     });
 });

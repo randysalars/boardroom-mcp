@@ -7,11 +7,12 @@ All notable changes to Boardroom MCP will be documented in this file.
 ### Fixed
 - Sanitize `task`/`outcome`/`entity` before LEDGER writes — embedded markdown headings can no longer forge sessions that `query_intelligence` serves as precedents
 - Reject trust-oracle entity names that collide with `Object.prototype` members (`__proto__`, `constructor`, …); lookups now use own-property checks so inherited keys can't yield NaN% profiles
-- Validate the `query_intelligence` `limit` parameter (positive integer, capped at 50)
+- Validate the `query_intelligence` `limit` parameter (positive integer, capped at 50) and clamp it inside the tool as defense in depth for direct callers
 - Serialize trust-oracle read-modify-write cycles so concurrent tool calls can't lose updates
 - `package-lock.json` now matches `package.json` (lockfile was stale at 0.2.0)
 
 ### Changed
+- `analyze` extracts each advisor's seat-card details once (shared by perspective sections and the tension framework). Perspective sections and tensions remain uncapped by design — only the Advisors Available line is display-capped at 8; capping sections too is a possible follow-up
 - `npm audit fix` — resolved all 6 high, 1 moderate, and 2 low advisories via semver-compatible bumps (incl. `tsx` 4.23.15 → `esbuild` 0.28.2)
 - Tests run against a temporary data directory; the real `~/.ai/boardroom/` is no longer touched
 
