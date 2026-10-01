@@ -9,7 +9,7 @@
 
 import fs from 'fs/promises';
 import path from 'path';
-import { LEDGER_PATH, now, updateTrustOracle, mcpSuccess, mcpError } from '../utils.js';
+import { LEDGER_PATH, now, sanitizeForLedger, updateTrustOracle, mcpSuccess, mcpError } from '../utils.js';
 import type { McpToolResponse } from '../types.js';
 
 /** Negative outcome keywords used to infer success/failure for trust scoring. */
@@ -34,14 +34,16 @@ export async function reportOutcomeTool(
         const timestamp = now();
         const emoji = followedRecommendation ? '✅' : '⚠️';
 
+        // Heading markers in user text would open a new LEDGER session when
+        // query_intelligence splits on `^## ` — neutralize them before writing.
         const entry = [
             ``,
             `## ${emoji} Outcome Report — ${timestamp}`,
             ``,
-            `**Task:** ${task}`,
-            `**Outcome:** ${outcome}`,
+            `**Task:** ${sanitizeForLedger(task)}`,
+            `**Outcome:** ${sanitizeForLedger(outcome)}`,
             `**Followed Recommendation:** ${followedRecommendation ? 'Yes' : 'No'}`,
-            ...(entity ? [`**Entity:** ${entity}`] : []),
+            ...(entity ? [`**Entity:** ${sanitizeForLedger(entity)}`] : []),
             `**Timestamp:** ${timestamp}`,
             ``,
             `---`,

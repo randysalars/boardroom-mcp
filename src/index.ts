@@ -25,7 +25,7 @@ import { reportOutcomeTool } from './tools/report.js';
 
 const server = new McpServer({
     name: 'boardroom-mcp',
-    version: '0.2.1',
+    version: '0.2.2',
 });
 
 // ── Tool 1: analyze ──────────────────────────────────────────────
@@ -54,7 +54,7 @@ server.tool(
     'Search the Boardroom LEDGER (persistent decision memory) and Wisdom Codex for relevant precedents, past decisions, and distilled insights. Returns keyword-matched results with timestamps and excerpts. The LEDGER grows each time you use report_outcome.',
     {
         query: z.string().describe('The search query — topic, keyword, or question'),
-        limit: z.number().optional().default(10).describe('Max results to return'),
+        limit: z.coerce.number().int().min(1).max(50).optional().default(10).describe('Max results to return (1–50)'),
     },
     async ({ query, limit }) => queryIntelligenceTool(validateInput(query, 'query'), limit),
 );
