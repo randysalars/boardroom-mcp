@@ -14,7 +14,7 @@ import { trustLookupTool } from '../src/tools/trust.js';
 import { reportOutcomeTool } from '../src/tools/report.js';
 import { LEDGER_PATH } from '../src/utils.js';
 
-/** Append `count` vendor-keyword sessions to the (isolated) LEDGER. */
+/** Write `count` vendor-keyword sessions to the (isolated) LEDGER. */
 async function seedLedgerWithSessions(count: number): Promise<void> {
     let ledger = '';
     for (let i = 0; i < count; i += 1) {
