@@ -1,3 +1,6 @@
+// Isolation must come first: src modules resolve their data paths from env
+// at import time, and static imports evaluate in declaration order.
+import './helpers/env.js';
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
