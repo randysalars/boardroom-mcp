@@ -110,6 +110,9 @@ async function loadCouncilSeats(council: string, hasFull: boolean): Promise<Coun
 /** Maximum number of LEDGER precedent excerpts per query. */
 const PRECEDENT_EXCERPT_LENGTH = 300;
 
+/** Maximum number of advisor sections displayed in an analysis. */
+const MAX_DISPLAYED_ADVISORS = 8;
+
 /** Search the LEDGER for precedents. */
 async function findPrecedents(query: string, limit: number = 5): Promise<string[]> {
     const ledger = await safeReadFile(LEDGER_PATH);
@@ -172,31 +175,33 @@ export async function analyzeTool(task: string): Promise<McpToolResponse> {
             councils.map((c) => loadCouncilSeats(c, hasFull)),
         );
 
-        // Deduplicate advisors and collect their details
+        // Deduplicate advisors and extract each one's details exactly once,
+        // shared by the section and tension builders below.
         const seenAdvisors = new Set<string>();
-        const advisorSections: string[] = [];
-
+        const detailsByAdvisor = new Map<string, AdvisorDetails | null>();
         for (const result of seatResults) {
             for (const advisor of result.advisors) {
                 if (!seenAdvisors.has(advisor)) {
                     seenAdvisors.add(advisor);
-                    const details = extractAdvisorDetails(result.content, advisor);
-                    if (details) {
-                        advisorSections.push([
-                            `### ${advisor}`,
-                            details.philosophy ? `- **Philosophy:** ${details.philosophy}` : '',
-                            details.criteria ? `- **Decision Criteria:** ${details.criteria}` : '',
-                            details.signatureQuestion ? `- **Signature Question:** ${details.signatureQuestion}` : '',
-                            details.tensionArea ? `- **Tension Area:** ${details.tensionArea}` : '',
-                        ].filter(Boolean).join('\n'));
-                    } else {
-                        advisorSections.push(`### ${advisor}`);
-                    }
+                    detailsByAdvisor.set(advisor, extractAdvisorDetails(result.content, advisor));
                 }
             }
         }
 
-        const advisors = [...seenAdvisors].slice(0, 8);
+        // Cap the displayed advisors before building sections so oversized
+        // councils don't pay for sections that are never shown.
+        const advisors = [...seenAdvisors].slice(0, MAX_DISPLAYED_ADVISORS);
+        const advisorSections = advisors.map((advisor) => {
+            const details = detailsByAdvisor.get(advisor);
+            if (!details) return `### ${advisor}`;
+            return [
+                `### ${advisor}`,
+                details.philosophy ? `- **Philosophy:** ${details.philosophy}` : '',
+                details.criteria ? `- **Decision Criteria:** ${details.criteria}` : '',
+                details.signatureQuestion ? `- **Signature Question:** ${details.signatureQuestion}` : '',
+                details.tensionArea ? `- **Tension Area:** ${details.tensionArea}` : '',
+            ].filter(Boolean).join('\n');
+        });
 
         const [precedents, wisdomEntries] = await Promise.all([
             findPrecedents(task, 5),
@@ -216,7 +221,7 @@ export async function analyzeTool(task: string): Promise<McpToolResponse> {
         const tensions: string[] = [];
         for (const result of seatResults) {
             for (const advisor of result.advisors) {
-                const details = extractAdvisorDetails(result.content, advisor);
+                const details = detailsByAdvisor.get(advisor);
                 if (details?.tensionArea) {
                     tensions.push(`- **${advisor}:** ${details.tensionArea}`);
                 }
